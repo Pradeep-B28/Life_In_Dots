@@ -189,10 +189,11 @@ export function createGridComponent(containerEl, stats, initialView = VIEWS.OVER
     if (layerContextUpdate) {
       activeLayerContext = { ...activeLayerContext, ...layerContextUpdate };
     }
-    canvas.classList.remove('layer-fade-anim');
-    void canvas.offsetWidth;
-    canvas.classList.add('layer-fade-anim');
     renderInstant();
+    canvas.classList.remove('layer-fade-anim');
+    requestAnimationFrame(() => {
+      canvas.classList.add('layer-fade-anim');
+    });
   }
 
   const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];

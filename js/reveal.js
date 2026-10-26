@@ -17,6 +17,7 @@ import {
   performSkipToFinal,
   drawFlashbackPick
 } from './reveal-helpers.js';
+import { trackEvent } from './share.js';
 
 export function startReveal(options = {}) {
   const {
@@ -307,6 +308,7 @@ export function startReveal(options = {}) {
 
   function skipToFinal() {
     isSkipped = true;
+    trackEvent('flashback_skip');
     if (rafId) cancelAnimationFrame(rafId);
     performSkipToFinal({
       homeCard,

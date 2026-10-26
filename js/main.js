@@ -15,6 +15,7 @@ import { createChaptersPanel, resolveDotChapters, validateChapter } from './chap
 import { calculateMilestones, createMilestonesPanel } from './milestones.js';
 import { calculateTimeSplit, createTimePanel, DEFAULT_SLIDERS } from './timebudget.js';
 import { initAudio, getAudioContext } from './audio.js';
+import { handleShareDots } from './share.js';
 
 let lastSubmittedValues = {
   dob: { year: 2004, month: 6, day: 12 },
@@ -178,6 +179,14 @@ export function runUserFlow(container, initialValues = null, options = {}) {
           currentGrid.setLayer(view, layerContext);
         },
         onScrollToRow: scrollToRow,
+        onShareView: (view, shareBtn) => {
+          handleShareDots(currentStats, shareBtn, {
+            view,
+            layerContext,
+            flashbackPicks,
+            nextUp: milestonesData.nextUp
+          });
+        },
         stats: currentStats,
         historyEvents: historyData.livedEvents,
         milestones: milestonesData,

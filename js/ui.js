@@ -1,6 +1,6 @@
 // UI components: Home form, validation, stat cards, details and closing card
 import { validateDate } from './dates.js';
-import { handleShareDots, handleShareWhatsApp, handleCopyLink } from './share.js';
+import { handleShareDots, handleShareWhatsApp, handleCopyLink, setShareSize, getShareSize } from './share.js';
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -328,12 +328,39 @@ export function createClosingCard(container, stats, onTryAnother, onWatchAgain) 
   const btnGroup = document.createElement('div');
   btnGroup.className = 'closing-btn-group';
 
+  const shareRow = document.createElement('div');
+  shareRow.className = 'closing-share-row';
+  shareRow.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:8px;';
+
+  const sizeToggle = document.createElement('div');
+  sizeToggle.className = 'share-size-toggle';
+  sizeToggle.setAttribute('role', 'radiogroup');
+  sizeToggle.setAttribute('aria-label', 'Share format');
+
+  const postBtn = document.createElement('button');
+  postBtn.type = 'button';
+  postBtn.className = 'share-size-btn' + (getShareSize() === 'post' ? ' active' : '');
+  postBtn.dataset.size = 'post';
+  postBtn.textContent = 'Post';
+  postBtn.onclick = () => setShareSize('post');
+
+  const statusBtn = document.createElement('button');
+  statusBtn.type = 'button';
+  statusBtn.className = 'share-size-btn' + (getShareSize() === 'status' ? ' active' : '');
+  statusBtn.dataset.size = 'status';
+  statusBtn.textContent = 'Status';
+  statusBtn.setAttribute('aria-checked', getShareSize() === 'status' ? 'true' : 'false');
+  statusBtn.onclick = () => setShareSize('status');
+  sizeToggle.append(postBtn, statusBtn);
+
   const shareBtn = document.createElement('button');
   shareBtn.type = 'button';
   shareBtn.className = 'primary-btn share-primary-btn';
   shareBtn.textContent = 'Share my dots';
-  shareBtn.addEventListener('click', () => handleShareDots(stats, shareBtn));
-  btnGroup.appendChild(shareBtn);
+  shareBtn.onclick = () => handleShareDots(stats, shareBtn, { view: 'overview' });
+
+  shareRow.append(sizeToggle, shareBtn);
+  btnGroup.appendChild(shareRow);
 
   const waBtn = document.createElement('button');
   waBtn.type = 'button';

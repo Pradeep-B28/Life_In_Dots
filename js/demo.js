@@ -1,4 +1,4 @@
-// Demo mode loop for recording reels (?demo=1)
+// Demo mode loop for recording reels (?demo=1) - Section 4K
 import { validateDate, getToday } from './dates.js';
 
 function wait(ms) {
@@ -75,13 +75,21 @@ export function startDemoMode(container, userFlowOptions) {
     element.classList.remove('demo-highlight');
   }
 
+  function getTabButton(viewName) {
+    const isLaptop = window.innerWidth >= 900;
+    if (isLaptop) {
+      return document.querySelector(`.laptop-tab-btn[data-view="${viewName}"]`);
+    }
+    return document.querySelector(`.bottom-tab-bar .tab-btn[data-view="${viewName}"]`);
+  }
+
   async function runDemoCycle() {
     while (isRunning) {
       window.scrollTo({ top: 0, behavior: 'instant' });
 
       // 1. Show home card
       const { dob, life, customToday } = parseDemoParams(new URLSearchParams(window.location.search));
-      const flow = userFlowOptions.runUserFlow(container, { dob: { year: '', month: '', day: '' }, lifePicked: 80 }, {
+      userFlowOptions.runUserFlow(container, { dob: { year: '', month: '', day: '' }, lifePicked: 80 }, {
         customToday
       });
 
@@ -93,37 +101,35 @@ export function startDemoMode(container, userFlowOptions) {
       const yearSelect = container.querySelector('.year-select');
       const submitBtn = container.querySelector('.home-card .primary-btn');
 
-      // 2. Tap Day -> value changes to dob.day
+      // 2. Form entry
       if (daySelect) {
         await moveAndTap(daySelect, () => {
           daySelect.value = String(dob.day);
           daySelect.dispatchEvent(new Event('change', { bubbles: true }));
         });
       }
-      await wait(500);
+      await wait(450);
       if (!isRunning) break;
 
-      // Tap Month -> value changes to dob.month
       if (monthSelect) {
         await moveAndTap(monthSelect, () => {
           monthSelect.value = String(dob.month);
           monthSelect.dispatchEvent(new Event('change', { bubbles: true }));
         });
       }
-      await wait(500);
+      await wait(450);
       if (!isRunning) break;
 
-      // Tap Year -> value changes to dob.year
       if (yearSelect) {
         await moveAndTap(yearSelect, () => {
           yearSelect.value = String(dob.year);
           yearSelect.dispatchEvent(new Event('change', { bubbles: true }));
         });
       }
-      await wait(500);
+      await wait(450);
       if (!isRunning) break;
 
-      // 3. Tap chosen life pill button
+      // Tap chosen life pill button
       const lifeBtns = Array.from(container.querySelectorAll('.life-pill-btn'));
       const targetLifeBtn = lifeBtns.find(b => b.textContent.includes(String(life))) || lifeBtns[1];
       if (targetLifeBtn) {
@@ -131,7 +137,7 @@ export function startDemoMode(container, userFlowOptions) {
           targetLifeBtn.click();
         });
       }
-      await wait(500);
+      await wait(450);
       if (!isRunning) break;
 
       // Tap "Show my life"
@@ -143,36 +149,95 @@ export function startDemoMode(container, userFlowOptions) {
       await wait(300);
       tapDot.style.opacity = '0';
 
-      // 4. Wait for the full reveal sequence to play (~8.5 seconds)
-      await wait(8600);
+      // 3. Full reveal animation (~8.5s) + hold (1.5s)
+      await wait(10000);
       if (!isRunning) break;
 
-      // 5. Hold for 4 seconds
+      // 4. Tab Tour (UPGRADE_BRIEF.md Section 4K)
+      // Step 1: History, 4 s -> tap 2011 World Cup row
+      const histBtn = getTabButton('history');
+      if (histBtn) {
+        await moveAndTap(histBtn, () => histBtn.click());
+      }
+      await wait(600);
+      if (!isRunning) break;
+
+      const wcRow = Array.from(document.querySelectorAll('.history-item')).find(it =>
+        it.textContent.includes('2011') || it.textContent.includes('Cricket World Cup')
+      );
+      if (wcRow) {
+        await moveAndTap(wcRow, () => wcRow.click());
+      }
+      await wait(2800);
+      if (!isRunning) break;
+
+      // Step 2: Chapters, 6 s -> tap School, College and First job chips (1.5 s apart)
+      const chapBtn = getTabButton('chapters');
+      if (chapBtn) {
+        await moveAndTap(chapBtn, () => chapBtn.click());
+      }
+      await wait(800);
+      if (!isRunning) break;
+
+      const schoolChip = document.querySelector('.ch-preset-chip[data-preset="school"]');
+      if (schoolChip) {
+        await moveAndTap(schoolChip, () => schoolChip.click());
+      }
+      await wait(1500);
+      if (!isRunning) break;
+
+      const collegeChip = document.querySelector('.ch-preset-chip[data-preset="college"]');
+      if (collegeChip) {
+        await moveAndTap(collegeChip, () => collegeChip.click());
+      }
+      await wait(1500);
+      if (!isRunning) break;
+
+      const jobChip = document.querySelector('.ch-preset-chip[data-preset="first-job"]');
+      if (jobChip) {
+        await moveAndTap(jobChip, () => jobChip.click());
+      }
+      await wait(1500);
+      if (!isRunning) break;
+
+      // Step 3: Time, 6 s -> open on "Next 10 years", after 2 s tap "Swap 1 hour of phone for learning"
+      const timeBtn = getTabButton('time');
+      if (timeBtn) {
+        await moveAndTap(timeBtn, () => timeBtn.click());
+      }
+      await wait(600);
+      if (!isRunning) break;
+
+      const tenYrPill = document.querySelector('.time-range-pill[data-range="10years"]');
+      if (tenYrPill && !tenYrPill.classList.contains('active')) {
+        await moveAndTap(tenYrPill, () => tenYrPill.click());
+      }
+      await wait(2000);
+      if (!isRunning) break;
+
+      const swapBtn = document.querySelector('.time-swap-btn');
+      if (swapBtn && !swapBtn.disabled) {
+        await moveAndTap(swapBtn, () => swapBtn.click());
+      }
+      await wait(3400);
+      if (!isRunning) break;
+
+      // Step 4: Milestones, 4 s -> open it, next-up card in view
+      const msBtn = getTabButton('milestones');
+      if (msBtn) {
+        await moveAndTap(msBtn, () => msBtn.click());
+      }
       await wait(4000);
       if (!isRunning) break;
 
-      // On phone, scroll down to stat cards and hold 4 seconds
-      const statCards = container.querySelector('.stat-cards-wrap');
-      if (statCards && window.innerWidth < 900) {
-        statCards.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        await wait(4000);
-        if (!isRunning) break;
-      } else {
-        await wait(2000);
-        if (!isRunning) break;
+      // Step 5: Close sheet, scroll to top, clear demo chapters, restart loop
+      tapDot.style.opacity = '0';
+      if (window.__currentTabs) {
+        window.__currentTabs.closeSheet();
       }
-
-      // Then scroll down to closing card and hold 3 seconds
-      const closingCard = container.querySelector('.closing-card');
-      if (closingCard) {
-        closingCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        await wait(3000);
-        if (!isRunning) break;
-      }
-
-      // 6. Scroll back to top and restart
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      await wait(1200);
+      document.querySelectorAll('.ch-delete-btn').forEach(btn => btn.click());
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      await wait(1000);
     }
   }
 

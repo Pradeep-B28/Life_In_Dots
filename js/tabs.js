@@ -1,5 +1,6 @@
 // Tabs, bottom sheet and segmented control management (Section 4D)
 import { VIEWS } from './layers.js';
+import { setShareSize, getShareSize, trackEvent } from './share.js';
 
 const TAB_ICONS = {
   history: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/>',
@@ -19,6 +20,7 @@ export function createTabsComponent(options = {}) {
   const {
     onViewChange,
     onScrollToRow,
+    onShareView,
     stats,
     historyEvents = [],
     milestones = [],
@@ -115,9 +117,29 @@ export function createTabsComponent(options = {}) {
         </div>
       </div>
       <div class="panel-share-wrap">
+        <div class="share-size-toggle" role="radiogroup" aria-label="Share format">
+          <button type="button" class="share-size-btn${getShareSize() === 'post' ? ' active' : ''}" data-size="post">Post</button>
+          <button type="button" class="share-size-btn${getShareSize() === 'status' ? ' active' : ''}" data-size="status" aria-checked="${getShareSize() === 'status' ? 'true' : 'false'}">Status</button>
+        </div>
         <button type="button" class="primary-btn panel-share-btn" data-share-view="${cfg.id}">Share my dots</button>
       </div>
     `;
+
+    panel.querySelectorAll('.share-size-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        setShareSize(btn.dataset.size);
+      });
+    });
+
+    const shareBtn = panel.querySelector('.panel-share-btn');
+    if (shareBtn) {
+      shareBtn.addEventListener('click', () => {
+        if (typeof onShareView === 'function') {
+          onShareView(cfg.id, shareBtn);
+        }
+      });
+    }
+
     panels[cfg.id] = panel;
     panelsContainer.appendChild(panel);
   });
@@ -194,6 +216,7 @@ export function createTabsComponent(options = {}) {
     }
 
     if (typeof onViewChange === 'function') {
+      trackEvent('tab_open', { tab: view });
       const startTime = performance.now();
       onViewChange(view);
       const elapsed = performance.now() - startTime;

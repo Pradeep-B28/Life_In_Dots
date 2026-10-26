@@ -1,7 +1,34 @@
-// Share actions: native image sharing, WhatsApp, and link copying
+// Share actions: native image sharing, WhatsApp, link copying, and analytics tracking
 import { generateShareBlob } from './shareImage.js';
 
-export async function handleShareDots(stats, shareBtn = null) {
+let currentShareSize = 'status'; // default: 'status' (1080 x 1920)
+
+export function getShareSize() {
+  return currentShareSize;
+}
+
+export function setShareSize(size) {
+  if (size === 'post' || size === 'status') {
+    currentShareSize = size;
+    document.querySelectorAll('.share-size-btn').forEach(btn => {
+      const active = btn.dataset.size === size;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-checked', active ? 'true' : 'false');
+    });
+  }
+}
+
+export function trackEvent(eventName, params = {}) {
+  try {
+    if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
+      window.gtag('event', eventName, params);
+    }
+  } catch (e) {
+    // Analytics failures must never break the UI
+  }
+}
+
+export async function handleShareDots(stats, shareBtn = null, options = {}) {
   let originalText = '';
   if (shareBtn) {
     originalText = shareBtn.textContent;
@@ -9,8 +36,18 @@ export async function handleShareDots(stats, shareBtn = null) {
     shareBtn.disabled = true;
   }
 
+  const shareOptions = {
+    size: currentShareSize,
+    ...options
+  };
+
   try {
-    const blob = await generateShareBlob(stats);
+    trackEvent('share_image', {
+      view: shareOptions.view || 'overview',
+      size: shareOptions.size || 'status'
+    });
+
+    const blob = await generateShareBlob(stats, shareOptions);
     const file = new File([blob], 'life-in-dots.png', { type: 'image/png' });
     const shareUrl = window.location.origin;
     const shareText = `This is my life in dots. One dot is one week. See yours: ${shareUrl}`;
@@ -34,7 +71,7 @@ export async function handleShareDots(stats, shareBtn = null) {
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
   } catch (err) {
     // Ignore quietly

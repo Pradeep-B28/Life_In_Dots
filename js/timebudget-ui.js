@@ -6,6 +6,7 @@ import {
   canSwapPhoneForLearning,
   swapPhoneForLearning
 } from './timebudget.js';
+import { trackEvent } from './share.js';
 
 export function createTimePanel(containerEl, options = {}) {
   const {
@@ -349,6 +350,7 @@ export function createTimePanel(containerEl, options = {}) {
   let chipTimeout = null;
   swapBtn.addEventListener('click', () => {
     if (!canSwapPhoneForLearning(sliders)) return;
+    trackEvent('swap_hour');
 
     const prevSplit = lastValidSplit;
     sliders = swapPhoneForLearning(sliders);

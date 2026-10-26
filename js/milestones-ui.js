@@ -1,5 +1,6 @@
 // Milestones Tab UI (UPGRADE_BRIEF.md Section 4H, Section 7B)
 import { buildIcsCalendarFile, buildGoogleCalendarUrl } from './milestones.js';
+import { trackEvent } from './share.js';
 
 export function downloadIcsFile(milestone, siteUrl = 'https://wrench-wise.com') {
   const icsContent = buildIcsCalendarFile(milestone, siteUrl);
@@ -15,6 +16,7 @@ export function downloadIcsFile(milestone, siteUrl = 'https://wrench-wise.com') 
 }
 
 export function handleCalendarAction(milestone, siteUrl = 'https://wrench-wise.com') {
+  trackEvent('calendar_add');
   const isAndroid = /Android/i.test(navigator.userAgent);
   if (isAndroid) {
     const url = buildGoogleCalendarUrl(milestone, siteUrl);
