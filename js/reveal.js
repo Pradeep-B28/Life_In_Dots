@@ -106,7 +106,7 @@ export function startReveal({
       if (homeCard) homeCard.style.display = 'none';
       if (resultSection) {
         resultSection.style.opacity = '1';
-        resultSection.style.transform = 'scale(1)';
+        resultSection.style.transform = 'none';
       }
     }
 

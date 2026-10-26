@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#FFFFFF">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FFFFFF">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0F172A">
   <title>Your Life in Dots by Wrench Wise</title>
   <meta name="description" content="One dot for every week of your life. See yours in 10 seconds.">
 
@@ -24,8 +25,20 @@
   <link rel="icon" type="image/png" href="assets/favicon.png">
   <link rel="manifest" href="manifest.json">
 
+  <!-- Prevent flash of wrong theme -->
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem('lid-theme');
+        if (!t && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) t = 'dark';
+        if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+      } catch (e) {}
+    })();
+  </script>
+
   <!-- Styles -->
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="tabs.css">
 </head>
 <body>
   <header class="app-header">

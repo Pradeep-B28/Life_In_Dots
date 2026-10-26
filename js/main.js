@@ -7,6 +7,12 @@ import { createGridComponent } from './grid.js';
 import { createHomeCard, createStatCards, createClosingCard } from './ui.js';
 import { startReveal } from './reveal.js';
 import { startDemoMode } from './demo.js';
+import { initTheme } from './theme.js';
+import { createTabsComponent } from './tabs.js';
+import { VIEWS } from './layers.js';
+import { getHistoryData } from './history.js';
+import { calculateMilestones } from './milestones.js';
+import { calculateTimeSplit } from './timebudget.js';
 
 let lastSubmittedValues = {
   dob: { year: 2004, month: 6, day: 12 },
@@ -15,7 +21,7 @@ let lastSubmittedValues = {
 
 export function runUserFlow(container, initialValues = null, options = {}) {
   container.textContent = '';
-  const { seekTime = null, autoStart = false, customToday = null } = options;
+  const { seekTime = null, autoStart = false, customToday = null, initialTab = null } = options;
 
   const homeWrapper = document.createElement('div');
   homeWrapper.className = 'home-wrapper';
@@ -51,12 +57,16 @@ export function runUserFlow(container, initialValues = null, options = {}) {
   headerBox.appendChild(headline);
   headerBox.appendChild(subline);
 
+  const overviewWrapper = document.createElement('div');
+  overviewWrapper.className = 'overview-wrapper';
+
   const statCardsContainer = document.createElement('div');
   const closingContainer = document.createElement('div');
+  overviewWrapper.appendChild(statCardsContainer);
+  overviewWrapper.appendChild(closingContainer);
 
   rightCol.appendChild(headerBox);
-  rightCol.appendChild(statCardsContainer);
-  rightCol.appendChild(closingContainer);
+  rightCol.appendChild(overviewWrapper);
 
   revealContainer.appendChild(leftCol);
   revealContainer.appendChild(rightCol);
@@ -77,6 +87,10 @@ export function runUserFlow(container, initialValues = null, options = {}) {
 
     function onTryAnother() {
       if (currentRevealController) currentRevealController.cancel();
+      if (window.__currentTabs) {
+        window.__currentTabs.hide();
+        window.__currentTabs.closeSheet();
+      }
       resultSection.style.display = 'none';
       homeWrapper.style.display = 'block';
       homeWrapper.style.opacity = '1';
@@ -95,11 +109,84 @@ export function runUserFlow(container, initialValues = null, options = {}) {
       closingContainer.textContent = '';
       leftCol.textContent = '';
 
-      currentGrid = createGridComponent(leftCol, currentStats);
+      const historyData = getHistoryData(currentStats.dob, todayDayNum);
+      const milestonesData = calculateMilestones(currentStats.dob, currentStats.lifePicked, todayDayNum);
+      const timeSplitData = calculateTimeSplit(currentStats.dob, currentStats.lifePicked, todayDayNum, '10y');
+
+      const layerContext = {
+        livedDots: currentStats.livedDots,
+        currentDotIndex: currentStats.currentRow * 52 + currentStats.weekIndex,
+        totalDots: currentStats.totalDots,
+        isBonus: currentStats.isBonus,
+        historyEvents: historyData.livedEvents,
+        activeFilter: 'all',
+        timeSplit: timeSplitData,
+        milestones: milestonesData.milestones || [],
+        chapters: [],
+        dotChapterMap: [],
+        hasAnyChapters: false
+      };
+
+      currentGrid = createGridComponent(leftCol, currentStats, VIEWS.OVERVIEW, layerContext);
       window.__currentGrid = currentGrid;
 
       const cardsUI = createStatCards(statCardsContainer, currentStats);
       const closeUI = createClosingCard(closingContainer, currentStats, onTryAnother, onWatchAgain);
+
+      function scrollToRow(row, mode = 'top') {
+        if (!currentGrid || !currentGrid.getLayout()) return;
+        const layout = currentGrid.getLayout();
+        const canvasEl = currentGrid.canvas;
+        const rect = canvasEl.getBoundingClientRect();
+        const canvasTop = rect.top + window.scrollY;
+        const s = layout.s;
+        const gapCount = Math.floor(row / 10);
+        const rowY = row * s + gapCount * (0.8 * s);
+        let targetY = canvasTop + rowY;
+        if (mode === 'center20') {
+          targetY = targetY - (window.innerHeight * 0.20);
+        } else {
+          targetY = targetY - 60;
+        }
+        window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
+      }
+
+      if (window.__currentTabs) {
+        window.__currentTabs.bottomBar.remove();
+        window.__currentTabs.backdrop.remove();
+        window.__currentTabs.sheet.remove();
+        window.__currentTabs.laptopTabs.remove();
+        window.__currentTabs.panelsContainer.remove();
+      }
+
+      const tabs = createTabsComponent({
+        onViewChange: (view) => {
+          currentGrid.setLayer(view, layerContext);
+        },
+        onScrollToRow: scrollToRow,
+        stats: currentStats,
+        historyEvents: historyData.livedEvents,
+        milestones: milestonesData,
+        overviewWrapper
+      });
+      window.__currentTabs = tabs;
+
+      rightCol.insertBefore(tabs.laptopTabs, overviewWrapper);
+      rightCol.appendChild(tabs.panelsContainer);
+
+      document.body.appendChild(tabs.bottomBar);
+      document.body.appendChild(tabs.backdrop);
+      document.body.appendChild(tabs.sheet);
+
+      if (seekTime === null) {
+        tabs.hide();
+      } else {
+        tabs.show();
+      }
+
+      if (initialTab) {
+        tabs.setView(initialTab);
+      }
 
       currentRevealController = startReveal({
         stats: currentStats,
@@ -110,7 +197,10 @@ export function runUserFlow(container, initialValues = null, options = {}) {
         sublineEl: subline,
         statCardsUI: cardsUI,
         closingCard: closeUI,
-        seekTime
+        seekTime,
+        onComplete: () => {
+          tabs.show();
+        }
       });
 
       window.__lastReveal = currentRevealController;
@@ -128,60 +218,14 @@ export function runUserFlow(container, initialValues = null, options = {}) {
   return { formHandle, showMyLife };
 }
 
-function initTheme() {
-  const toggleBtn = document.getElementById('theme-toggle');
-  const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-
-  function applyTheme(theme, save = true) {
-    if (theme === 'dark') {
-      document.documentElement.setAttribute('data-theme', 'dark');
-      if (metaThemeColor) metaThemeColor.setAttribute('content', '#0F172A');
-    } else {
-      document.documentElement.removeAttribute('data-theme');
-      if (metaThemeColor) metaThemeColor.setAttribute('content', '#FFFFFF');
-    }
-    if (save) {
-      try {
-        localStorage.setItem('lid-theme', theme);
-      } catch (err) {}
-    }
-    if (window.__currentGrid && window.__currentGrid.redraw) {
-      window.__currentGrid.redraw();
-    }
-  }
-
-  let savedTheme = null;
-  const paramTheme = new URLSearchParams(window.location.search).get('theme');
-  if (paramTheme === 'dark' || paramTheme === 'light') {
-    savedTheme = paramTheme;
-  } else {
-    try {
-      savedTheme = localStorage.getItem('lid-theme');
-    } catch (err) {}
-  }
-
-  if (savedTheme === 'dark' || savedTheme === 'light') {
-    applyTheme(savedTheme, false);
-  } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-    applyTheme('dark', false);
-  } else {
-    applyTheme('light', false);
-  }
-
-  if (toggleBtn) {
-    toggleBtn.addEventListener('click', () => {
-      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-      applyTheme(isDark ? 'light' : 'dark', true);
-    });
-  }
-}
-
 function init() {
   initTheme();
 
   const params = new URLSearchParams(window.location.search);
   const isTest = params.get('test') === '1';
   const isDemo = params.get('demo') === '1';
+  const paramTab = params.get('tab') || params.get('view');
+  const paramSeek = params.get('seek');
 
   if (isTest) {
     const testToday = params.get('today') || TEST_TODAY_STR;
@@ -191,7 +235,11 @@ function init() {
   } else if (isDemo) {
     startDemoMode(document.getElementById('app-content'), { runUserFlow });
   } else {
-    runUserFlow(document.getElementById('app-content'), lastSubmittedValues);
+    runUserFlow(document.getElementById('app-content'), lastSubmittedValues, {
+      autoStart: !!paramTab || paramSeek !== null,
+      seekTime: paramSeek !== null ? parseFloat(paramSeek) : (paramTab ? 99 : null),
+      initialTab: paramTab
+    });
   }
 }
 
