@@ -2,7 +2,8 @@
 
 A clean visual map of your life in weeks. One dot represents one week. The full canvas shows an entire life on a single screen, giving you perspective on the weeks lived and the Sundays ahead.
 
-Live link: https://wrench-wise.com/life-in-dots (or your deployment URL)
+Live link: https://lifeindots.vercel.app
+Demo link: https://lifeindots.vercel.app/?demo=1
 
 ## How to use it
 
