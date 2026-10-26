@@ -290,14 +290,19 @@ export function createGridComponent(containerEl, stats, initialView = VIEWS.OVER
     overlayCtx.scale(dpr, dpr);
   }
 
+  let showOverlay = false;
+  let tooltipEnabled = false;
+  let isRevealing = false;
+
   function renderInstant() {
+    if (isRevealing) return;
     resizeCanvases();
     const colors = getThemeColors();
     activeLayerContext.normalLivedColors = Array.from({ length: stats.rows }, (_, r) => getRowColor(r, stats.currentRow, colors));
     drawGrid(ctx, currentLayout, stats, colors, activeView, activeLayerContext);
     renderLegend(legend, activeView, activeLayerContext);
 
-    if (stats.currentRow < stats.rows && stats.weekIndex >= 0) {
+    if (showOverlay && stats.currentRow < stats.rows && stats.weekIndex >= 0) {
       drawOverlayCurrentDot(overlayCtx, currentLayout, colors, {
         row: stats.currentRow,
         col: stats.weekIndex,
@@ -331,14 +336,10 @@ export function createGridComponent(containerEl, stats, initialView = VIEWS.OVER
     const dotIdx = row * 52 + col;
 
     tooltip.textContent = '';
-    const line1 = document.createElement('div');
-    line1.style.fontWeight = '700';
-    line1.textContent = `Age ${row}, week ${col + 1}`;
-    const line2 = document.createElement('div');
-    line2.style.fontSize = '0.75rem';
-    line2.style.color = 'var(--muted)';
-    line2.textContent = isCurrent ? 'This week' : `Around ${MONTHS[dotDate.month - 1]} ${dotDate.year}`;
-    tooltip.append(line1, line2);
+    const l1 = document.createElement('div'); l1.style.fontWeight = '700'; l1.textContent = `Age ${row}, week ${col + 1}`;
+    const l2 = document.createElement('div'); l2.style.fontSize = '0.75rem'; l2.style.color = 'var(--muted)';
+    l2.textContent = isCurrent ? 'This week' : `Around ${MONTHS[dotDate.month - 1]} ${dotDate.year}`;
+    tooltip.append(l1, l2);
 
     const extraLines = getDotTooltipDetails(dotIdx, activeView, activeLayerContext);
     extraLines.forEach(item => {
@@ -356,7 +357,7 @@ export function createGridComponent(containerEl, stats, initialView = VIEWS.OVER
   }
 
   function handlePointer(e) {
-    if (!currentLayout) return;
+    if (!tooltipEnabled || !currentLayout) return;
     const rect = canvas.getBoundingClientRect();
     const hit = hitTestDot(e.clientX - rect.left, e.clientY - rect.top, currentLayout);
     if (hit) showTooltip(hit.row, hit.col);
@@ -385,6 +386,9 @@ export function createGridComponent(containerEl, stats, initialView = VIEWS.OVER
     getLayout: () => currentLayout,
     resizeCanvases,
     redraw: renderInstant,
+    enableOverlay: (on = true) => { showOverlay = on; },
+    enableTooltip: (on = true) => { tooltipEnabled = on; },
+    setRevealing: (on = true) => { isRevealing = on; },
     setLayer,
     getView: () => activeView,
     drawEmpty: (alpha = 1) => drawEmptyGrid(ctx, currentLayout, getThemeColors(), alpha),

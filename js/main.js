@@ -10,9 +10,10 @@ import { startDemoMode } from './demo.js';
 import { initTheme } from './theme.js';
 import { createTabsComponent } from './tabs.js';
 import { VIEWS } from './layers.js';
-import { getHistoryData } from './history.js';
+import { getHistoryData, getFlashbackPicks } from './history.js';
 import { calculateMilestones } from './milestones.js';
 import { calculateTimeSplit } from './timebudget.js';
+import { initAudio, getAudioContext } from './audio.js';
 
 let lastSubmittedValues = {
   dob: { year: 2004, month: 6, day: 12 },
@@ -81,6 +82,7 @@ export function runUserFlow(container, initialValues = null, options = {}) {
 
   function showMyLife({ dob, lifePicked }) {
     lastSubmittedValues = { dob, lifePicked };
+    getAudioContext();
 
     const todayDayNum = getToday(customToday);
     currentStats = calculateLifeStats(dob, lifePicked, todayDayNum);
@@ -110,6 +112,7 @@ export function runUserFlow(container, initialValues = null, options = {}) {
       leftCol.textContent = '';
 
       const historyData = getHistoryData(currentStats.dob, todayDayNum);
+      const flashbackPicks = getFlashbackPicks(currentStats.dob, todayDayNum);
       const milestonesData = calculateMilestones(currentStats.dob, currentStats.lifePicked, todayDayNum);
       const timeSplitData = calculateTimeSplit(currentStats.dob, currentStats.lifePicked, todayDayNum, '10y');
 
@@ -128,6 +131,7 @@ export function runUserFlow(container, initialValues = null, options = {}) {
       };
 
       currentGrid = createGridComponent(leftCol, currentStats, VIEWS.OVERVIEW, layerContext);
+      currentGrid.setRevealing(true);
       window.__currentGrid = currentGrid;
 
       const cardsUI = createStatCards(statCardsContainer, currentStats);
@@ -178,10 +182,10 @@ export function runUserFlow(container, initialValues = null, options = {}) {
       document.body.appendChild(tabs.backdrop);
       document.body.appendChild(tabs.sheet);
 
-      if (seekTime === null) {
-        tabs.hide();
-      } else {
+      if (seekTime !== null && seekTime >= 15.0) {
         tabs.show();
+      } else {
+        tabs.hide();
       }
 
       if (initialTab) {
@@ -198,7 +202,11 @@ export function runUserFlow(container, initialValues = null, options = {}) {
         statCardsUI: cardsUI,
         closingCard: closeUI,
         seekTime,
+        flashbackPicks,
         onComplete: () => {
+          currentGrid.setRevealing(false);
+          currentGrid.enableOverlay(true);
+          currentGrid.enableTooltip(true);
           tabs.show();
         }
       });
@@ -220,6 +228,7 @@ export function runUserFlow(container, initialValues = null, options = {}) {
 
 function init() {
   initTheme();
+  initAudio();
 
   const params = new URLSearchParams(window.location.search);
   const isTest = params.get('test') === '1';

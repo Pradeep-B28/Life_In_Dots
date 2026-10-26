@@ -1,77 +1,87 @@
-// The reveal timeline controller
+// The cinematic reveal timeline controller for Your Life in Dots (Section 4A)
 import { easeInOutCubic, easeOutCubic } from './counter.js';
 import { formatNumber } from './stats.js';
+import { computeCameraAtTime, drawCameraIntro, createDotSprites } from './camera.js';
+import {
+  playIntroSwell,
+  playRowTick,
+  playYouAreHereChime,
+  playFlashbackPop,
+  playTurnChord,
+  stopAllSounds
+} from './audio.js';
+import { getThemeColors } from './colors.js';
+import {
+  renderReducedMotion,
+  triggerCardsSequence,
+  performSkipToFinal,
+  drawFlashbackPick
+} from './reveal-helpers.js';
 
-export function startReveal({
-  stats,
-  gridComponent,
-  homeCard,
-  resultSection,
-  headlineEl,
-  sublineEl,
-  statCardsUI,
-  closingCard,
-  seekTime = null,
-  onComplete
-}) {
-  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+export function startReveal(options = {}) {
+  const {
+    stats,
+    gridComponent,
+    homeCard,
+    resultSection,
+    headlineEl,
+    sublineEl,
+    statCardsUI,
+    closingCard,
+    seekTime = null,
+    flashbackPicks = [],
+    onComplete
+  } = options;
 
-  // Reduced motion branch
+  const prefersReduced = (typeof window !== 'undefined' && window.matchMedia)
+    ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    : false;
+
   if (prefersReduced) {
-    if (homeCard) homeCard.style.display = 'none';
-    if (resultSection) {
-      resultSection.style.display = 'block';
-      resultSection.style.opacity = '1';
-      resultSection.style.transform = 'none';
-    }
-    gridComponent.redraw();
-
-    if (stats.isBonus) {
-      headlineEl.textContent = 'You have lived over 100 years. Every week from here is a bonus.';
-      sublineEl.textContent = `${formatNumber(stats.weeksLived)} weeks lived.`;
-    } else {
-      headlineEl.textContent = `You have about ${formatNumber(stats.ahead.sundays)} Sundays ahead.`;
-      sublineEl.textContent = `In a life of ${stats.lifeUsed} years. Every grey dot is a week still ahead of you.`;
-    }
-
-    if (statCardsUI) {
-      if (statCardsUI.aheadCardsList) {
-        statCardsUI.aheadCardsList.forEach((c) => {
-          c.numEl.textContent = formatNumber(c.targetValue);
-          c.card.classList.add('visible');
-        });
-      }
-      if (statCardsUI.soFarCardsList) {
-        statCardsUI.soFarCardsList.forEach((c) => {
-          c.numEl.textContent = c.textVal ? c.textVal : formatNumber(c.targetValue);
-          c.card.classList.add('visible');
-        });
-      }
-    }
-
-    if (closingCard) closingCard.classList.add('visible');
-    if (onComplete) onComplete();
+    renderReducedMotion({
+      stats,
+      gridComponent,
+      homeCard,
+      resultSection,
+      headlineEl,
+      sublineEl,
+      statCardsUI,
+      closingCard,
+      flashbackPicks,
+      onComplete
+    });
+    playYouAreHereChime();
     return { cancel: () => {} };
   }
 
-  // Animation timeline configuration
+  const K = (flashbackPicks && flashbackPicks.length) ? flashbackPicks.length : 0;
   const fillDuration = stats.livedDots < 150 ? 1.2 : 3.6;
+
   const T_FADE_HOME_END = 0.5;
-  const T_WAVE_START = 0.5;
-  const T_WAVE_END = 1.3;
-  const T_FILL_START = 1.3;
+  const T_INTRO_START = 0.5;
+  const T_INTRO_END = 3.5;
+  const T_FILL_START = 3.5;
   const T_FILL_END = T_FILL_START + fillDuration;
-  const T_TURN = T_FILL_END + 0.6;
+  const T_YOU_ARE_HERE = T_FILL_END;
+  const T_FLASHBACK_START = T_YOU_ARE_HERE + 0.7;
+  const T_FLASHBACK_END = T_FLASHBACK_START + (K * 2.0);
+  const T_TURN = T_FLASHBACK_END;
   const T_CARDS = T_TURN + 1.4;
 
   let animTime = 0;
   let lastTimestamp = null;
   let rafId = null;
   let isCancelled = false;
+  let isSkipped = false;
 
   let lastDrawnLivedIndex = 0;
-  let emptyGridDrawn = false;
+  let lastFilledRow = -1;
+  let emptyGridDrawnAt35 = false;
+  let introAudioStarted = false;
+  let chimePlayed = false;
+  let turnChordPlayed = false;
   let cardsTriggered = false;
+  const playedFlashbackIndices = new Set();
 
   const fpsMetrics = {
     frameCount: 0,
@@ -79,7 +89,27 @@ export function startReveal({
     fpsHistory: []
   };
 
-  // Initial DOM states
+  const cardEl = gridComponent.card;
+  const captionWrap = document.createElement('div');
+  captionWrap.className = 'reveal-caption-wrap';
+
+  const captionEl = document.createElement('div');
+  captionEl.className = 'reveal-caption';
+  captionWrap.appendChild(captionEl);
+  cardEl.appendChild(captionWrap);
+
+  const skipBtn = document.createElement('button');
+  skipBtn.type = 'button';
+  skipBtn.className = 'reveal-skip-btn';
+  skipBtn.textContent = 'Skip';
+  skipBtn.setAttribute('aria-label', 'Skip reveal');
+  skipBtn.style.display = 'none';
+  cardEl.appendChild(skipBtn);
+
+  skipBtn.addEventListener('click', () => skipToFinal());
+
+  let dotSprites = createDotSprites(getThemeColors(), gridComponent.getLayout() ? gridComponent.getLayout().dotRadius : 3);
+
   if (resultSection) {
     resultSection.style.display = 'block';
     resultSection.style.opacity = '0';
@@ -89,9 +119,12 @@ export function startReveal({
   sublineEl.textContent = ' ';
 
   function update(dt) {
+    if (isCancelled || isSkipped) return;
     animTime += dt;
 
-    // 1. Home card fade out (0.0 to 0.5s)
+    const layout = gridComponent.getLayout();
+    const colors = getThemeColors();
+
     if (animTime <= T_FADE_HOME_END) {
       const p = Math.min(1, animTime / T_FADE_HOME_END);
       if (homeCard) {
@@ -110,23 +143,57 @@ export function startReveal({
       }
     }
 
-    // 2. Empty grid wave (0.5 to 1.3s)
-    if (animTime >= T_WAVE_START) {
-      if (!emptyGridDrawn || animTime <= T_WAVE_END) {
-        const pWave = Math.min(1, (animTime - T_WAVE_START) / (T_WAVE_END - T_WAVE_START));
-        gridComponent.drawEmpty(pWave);
-        if (pWave >= 1) emptyGridDrawn = true;
+    if (animTime >= 0.5 && animTime < T_TURN) {
+      skipBtn.style.display = 'flex';
+    } else {
+      skipBtn.style.display = 'none';
+    }
+
+    // 2. Cinematic Intro (0.5 to 3.5s)
+    if (animTime >= T_INTRO_START && animTime < T_INTRO_END) {
+      if (!introAudioStarted) {
+        playIntroSwell(3.0);
+        introAudioStarted = true;
+      }
+
+      const rect = cardEl.getBoundingClientRect();
+      const viewportW = rect.width > 0 ? rect.width : (layout ? layout.width : 340);
+      const viewportH = rect.height > 0 ? rect.height : (layout ? layout.height : 600);
+
+      const cameraState = computeCameraAtTime(animTime, layout, viewportW, viewportH, stats);
+      drawCameraIntro(gridComponent.ctx, layout, colors, cameraState, dotSprites);
+
+      if (cameraState.caption) {
+        captionEl.className = 'reveal-caption';
+        captionEl.textContent = cameraState.caption;
+        captionEl.style.opacity = String(cameraState.captionOpacity);
+      } else {
+        captionEl.style.opacity = '0';
       }
     }
 
-    // 3. The Fill (1.3s to T_FILL_END)
+    // 3. The Fill (3.5 to T_FILL_END)
     if (animTime >= T_FILL_START && animTime <= T_FILL_END) {
+      captionEl.style.opacity = '0';
+
+      if (!emptyGridDrawnAt35) {
+        gridComponent.drawEmpty(1);
+        emptyGridDrawnAt35 = true;
+      }
+
       const pFill = (animTime - T_FILL_START) / fillDuration;
       const eased = easeInOutCubic(Math.min(1, Math.max(0, pFill)));
       const targetLived = Math.min(stats.livedDots, Math.floor(eased * stats.livedDots));
 
       for (let i = lastDrawnLivedIndex; i < targetLived; i++) {
-        gridComponent.drawLived(Math.floor(i / 52), i % 52);
+        const row = Math.floor(i / 52);
+        const col = i % 52;
+        gridComponent.drawLived(row, col);
+
+        if (row !== lastFilledRow) {
+          playRowTick(row);
+          lastFilledRow = row;
+        }
       }
       lastDrawnLivedIndex = targetLived;
 
@@ -134,7 +201,6 @@ export function startReveal({
       headlineEl.textContent = `${formatNumber(currentWeeks)} weeks lived`;
     }
 
-    // Fill completion check
     if (animTime > T_FILL_END) {
       if (lastDrawnLivedIndex < stats.livedDots) {
         for (let i = lastDrawnLivedIndex; i < stats.livedDots; i++) {
@@ -147,10 +213,14 @@ export function startReveal({
       }
     }
 
-    // 4. You Are Here overlay pulse (from T_FILL_END onwards)
-    if (animTime >= T_FILL_END && stats.currentRow < stats.rows && stats.weekIndex >= 0) {
-      const timeSinceLand = animTime - T_FILL_END;
+    // 4. You Are Here Overlay Pulse
+    if (animTime >= T_YOU_ARE_HERE && stats.currentRow < stats.rows && stats.weekIndex >= 0) {
+      if (!chimePlayed) {
+        playYouAreHereChime();
+        chimePlayed = true;
+      }
 
+      const timeSinceLand = animTime - T_YOU_ARE_HERE;
       let popScale = 1;
       if (timeSinceLand <= 0.3) {
         popScale = 1 + 0.8 * Math.sin((timeSinceLand / 0.3) * Math.PI);
@@ -165,7 +235,7 @@ export function startReveal({
         pulseAlpha = 1 - pPulse;
       }
 
-      const showLabel = timeSinceLand <= 3.0;
+      const showLabel = timeSinceLand <= 3.0 && animTime < T_FLASHBACK_START;
 
       gridComponent.drawOverlay({
         scale: popScale,
@@ -175,8 +245,36 @@ export function startReveal({
       });
     }
 
-    // 5. The Turn (T_TURN to T_CARDS)
+    // 5. Flashback
+    if (K > 0 && animTime >= T_FLASHBACK_START && animTime < T_FLASHBACK_END) {
+      const fbElapsed = animTime - T_FLASHBACK_START;
+      const pickIdx = Math.min(K - 1, Math.floor(fbElapsed / 2.0));
+      const pick = flashbackPicks[pickIdx];
+
+      if (pick) {
+        if (!playedFlashbackIndices.has(pickIdx)) {
+          playFlashbackPop();
+          playedFlashbackIndices.add(pickIdx);
+        }
+
+        const pickTime = fbElapsed - pickIdx * 2.0;
+        drawFlashbackPick(gridComponent.overlayCtx, pick, pickTime, layout, colors, captionEl);
+      }
+    } else if (animTime >= T_FLASHBACK_END && animTime < T_FLASHBACK_END + 0.3) {
+      captionEl.style.opacity = '0';
+      gridComponent.clearOverlay();
+    }
+
+    // 6. The Turn
     if (animTime >= T_TURN) {
+      captionEl.style.opacity = '0';
+      skipBtn.style.display = 'none';
+
+      if (!turnChordPlayed) {
+        playTurnChord();
+        turnChordPlayed = true;
+      }
+
       if (stats.isBonus) {
         headlineEl.textContent = 'You have lived over 100 years. Every week from here is a bonus.';
         sublineEl.textContent = `${formatNumber(stats.weeksLived)} weeks lived.`;
@@ -189,10 +287,13 @@ export function startReveal({
       }
     }
 
-    // 6. Stat cards & closing card (T_CARDS onwards)
+    // 7. Stat Cards & Finish
     if (animTime >= T_CARDS && !cardsTriggered) {
       cardsTriggered = true;
       triggerCardsSequence(statCardsUI, closingCard);
+      captionWrap.remove();
+      skipBtn.remove();
+
       const avgFps = fpsMetrics.fpsHistory.length > 0
         ? Math.round(fpsMetrics.fpsHistory.reduce((a, b) => a + b, 0) / fpsMetrics.fpsHistory.length)
         : 60;
@@ -204,104 +305,61 @@ export function startReveal({
     }
   }
 
-  function triggerCardsSequence(cardsUI, closing) {
-    if (!cardsUI) return;
-    let delay = 0;
-
-    if (cardsUI.aheadCardsList) {
-      cardsUI.aheadCardsList.forEach((c) => {
-        setTimeout(() => {
-          c.card.classList.add('visible');
-          animateCount(c.numEl, 0, c.targetValue, 800);
-        }, delay);
-        delay += 80;
-      });
-    }
-
-    if (cardsUI.soFarCardsList) {
-      cardsUI.soFarCardsList.forEach((c) => {
-        setTimeout(() => {
-          c.card.classList.add('visible');
-          if (c.textVal) {
-            c.numEl.textContent = c.textVal;
-          } else {
-            animateCount(c.numEl, 0, c.targetValue, 800);
-          }
-        }, delay);
-        delay += 80;
-      });
-    }
-
-    if (closing) {
-      setTimeout(() => {
-        closing.classList.add('visible');
-      }, delay + 100);
-    }
-  }
-
-  function animateCount(el, from, to, duration) {
-    const start = performance.now();
-    function step(now) {
-      const p = Math.min(1, (now - start) / duration);
-      const val = Math.round(from + easeOutCubic(p) * (to - from));
-      el.textContent = formatNumber(val);
-      if (p < 1) requestAnimationFrame(step);
-    }
-    requestAnimationFrame(step);
-  }
-
-  // If a fixed seekTime is provided (for frame-accurate screenshots), jump directly to that time
-  if (seekTime !== null && typeof seekTime === 'number') {
-    // Step forward in small increments to ensure canvas state matches
-    const stepSize = 0.05;
-    for (let t = 0; t < seekTime; t += stepSize) {
-      update(stepSize);
-    }
-    update(seekTime - animTime);
-    return {
-      cancel: () => {},
-      metrics: fpsMetrics
-    };
+  function skipToFinal() {
+    isSkipped = true;
+    if (rafId) cancelAnimationFrame(rafId);
+    performSkipToFinal({
+      homeCard,
+      resultSection,
+      captionWrap,
+      skipBtn,
+      gridComponent,
+      stats,
+      headlineEl,
+      sublineEl,
+      statCardsUI,
+      closingCard,
+      onComplete
+    });
   }
 
   function loop(timestamp) {
-    if (isCancelled) return;
+    if (isCancelled || isSkipped) return;
     if (!lastTimestamp) lastTimestamp = timestamp;
-    const dt = Math.min(0.05, (timestamp - lastTimestamp) / 1000);
+    const dt = (timestamp - lastTimestamp) / 1000;
     lastTimestamp = timestamp;
 
-    fpsMetrics.frameCount++;
-    fpsMetrics.totalTime += dt;
-    if (dt > 0) fpsMetrics.fpsHistory.push(1 / dt);
+    if (dt > 0 && dt < 0.2) {
+      fpsMetrics.frameCount++;
+      fpsMetrics.totalTime += dt;
+      fpsMetrics.fpsHistory.push(1 / dt);
+    }
 
     update(dt);
+
+    if (animTime < T_CARDS + 0.1) {
+      rafId = requestAnimationFrame(loop);
+    }
+  }
+
+  if (seekTime !== null) {
+    if (seekTime >= T_CARDS) {
+      skipToFinal();
+      return { cancel: () => {} };
+    }
+    update(seekTime);
+  } else {
     rafId = requestAnimationFrame(loop);
   }
 
-  function onVisibility() {
-    if (document.hidden) {
-      lastTimestamp = null;
-    }
-  }
-  document.addEventListener('visibilitychange', onVisibility);
-
-  rafId = requestAnimationFrame(loop);
-
   return {
-    cancel() {
+    cancel: () => {
       isCancelled = true;
       if (rafId) cancelAnimationFrame(rafId);
-      document.removeEventListener('visibilitychange', onVisibility);
+      stopAllSounds();
+      captionWrap.remove();
+      skipBtn.remove();
     },
-    getMetrics() {
-      const avgFps = fpsMetrics.fpsHistory.length > 0
-        ? fpsMetrics.fpsHistory.reduce((a, b) => a + b, 0) / fpsMetrics.fpsHistory.length
-        : 60;
-      return {
-        frameCount: fpsMetrics.frameCount,
-        totalTime: fpsMetrics.totalTime,
-        avgFps: Math.round(avgFps)
-      };
-    }
+    skip: skipToFinal
   };
 }
