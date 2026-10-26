@@ -13,7 +13,7 @@ import { VIEWS } from './layers.js';
 import { getHistoryData, getFlashbackPicks, createHistoryPanel } from './history.js';
 import { createChaptersPanel, resolveDotChapters, validateChapter } from './chapters.js';
 import { calculateMilestones } from './milestones.js';
-import { calculateTimeSplit } from './timebudget.js';
+import { calculateTimeSplit, createTimePanel, DEFAULT_SLIDERS } from './timebudget.js';
 import { initAudio, getAudioContext } from './audio.js';
 
 let lastSubmittedValues = {
@@ -115,11 +115,13 @@ export function runUserFlow(container, initialValues = null, options = {}) {
       const historyData = getHistoryData(currentStats.dob, todayDayNum);
       const flashbackPicks = getFlashbackPicks(currentStats.dob, todayDayNum);
       const milestonesData = calculateMilestones(currentStats.dob, currentStats.lifePicked, todayDayNum);
-      const timeSplitData = calculateTimeSplit(currentStats.dob, currentStats.lifePicked, todayDayNum, '10y');
+      const currentDotIdx = currentStats.currentRow * 52 + currentStats.weekIndex;
+      const aheadDots = currentStats.isBonus ? 0 : Math.max(0, currentStats.totalDots - currentDotIdx - 1);
+      const timeSplitData = calculateTimeSplit(DEFAULT_SLIDERS, '10years', aheadDots);
 
       const layerContext = {
         livedDots: currentStats.livedDots,
-        currentDotIndex: currentStats.currentRow * 52 + currentStats.weekIndex,
+        currentDotIndex: currentDotIdx,
         totalDots: currentStats.totalDots,
         isBonus: currentStats.isBonus,
         historyEvents: historyData.livedEvents,
@@ -207,6 +209,45 @@ export function runUserFlow(container, initialValues = null, options = {}) {
             layerContext.dotChapterMap = dotMap;
             layerContext.hasAnyChapters = validChapters.length > 0;
             currentGrid.setLayer(currentGrid.getView(), layerContext);
+          }
+        });
+      }
+
+      const timeContent = tabs.panels[VIEWS.TIME]?.querySelector('#panel-content-time');
+      if (timeContent) {
+        createTimePanel(timeContent, {
+          isBonus: currentStats.isBonus,
+          aheadDots,
+          initialSliders: DEFAULT_SLIDERS,
+          initialRange: '10years',
+          onTimeSplitChange: (newSplit, isDragging = false) => {
+            layerContext.timeSplit = newSplit;
+            if (currentGrid.getView() === VIEWS.TIME) {
+              if (isDragging) {
+                currentGrid.redrawTimeRange(newSplit);
+              } else {
+                currentGrid.setLayer(VIEWS.TIME, layerContext);
+              }
+            }
+          },
+          onSwapAnimation: (prevSplit, newSplit) => {
+            const currentDotIdx = currentStats.currentRow * 52 + currentStats.weekIndex;
+            const startIdx = currentDotIdx + 1;
+            const H = newSplit.H;
+            const changedDots = [];
+            let prevSum = 0;
+            const prevBounds = prevSplit.weeks.map(w => { prevSum += w; return prevSum; });
+            let newSum = 0;
+            const newBounds = newSplit.weeks.map(w => { newSum += w; return newSum; });
+
+            for (let offset = 0; offset < H; offset++) {
+              let oldB = 0;
+              while (offset >= prevBounds[oldB] && oldB < 5) oldB++;
+              let newB = 0;
+              while (offset >= newBounds[newB] && newB < 5) newB++;
+              if (oldB === 3 && newB === 4) changedDots.push(startIdx + offset);
+            }
+            currentGrid.animateSwapDots(changedDots, '--t-learn');
           }
         });
       }

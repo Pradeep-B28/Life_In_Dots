@@ -1,6 +1,8 @@
 // Time budget and week split logic for Your Life in Dots
 // Section 4G and Section 6C
 
+export { createTimePanel } from './timebudget-ui.js';
+
 export const TIME_BUCKETS = [
   { id: 'sleep',  label: 'Sleep',             colorVar: '--t-sleep',  min: 4, max: 12, default: 8 },
   { id: 'work',   label: 'Work or study',     colorVar: '--t-work',   min: 0, max: 16, default: 8 },

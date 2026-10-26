@@ -2,6 +2,7 @@
 import { dayNumber, fromDayNumber, addYears } from './dates.js';
 import { getThemeColors, resolveCssVar, getRowColor } from './colors.js';
 import { getDotLayerStyle, renderLegend, getDotTooltipDetails, VIEWS } from './layers.js';
+import { TIME_BUCKETS } from './timebudget.js';
 
 import {
   drawAgeGutter,
@@ -262,6 +263,78 @@ export function createGridComponent(containerEl, stats, initialView = VIEWS.OVER
     requestAnimationFrame(frame);
   }
 
+  function redrawTimeRange(timeSplit) {
+    if (!currentLayout || !timeSplit || !timeSplit.valid || timeSplit.H <= 0) return;
+    const colors = getThemeColors();
+    const currentDotIdx = stats.currentRow * 52 + stats.weekIndex;
+    const startIdx = currentDotIdx + 1;
+    const H = timeSplit.H;
+
+    let offset = 0;
+    for (let b = 0; b < 6; b++) {
+      const bucketWeeks = timeSplit.weeks[b] || 0;
+      if (bucketWeeks <= 0) continue;
+      const bucket = TIME_BUCKETS[b];
+      const color = resolveCssVar(`var(${bucket.colorVar})`, colors.brand);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      for (let i = 0; i < bucketWeeks; i++) {
+        const dotIdx = startIdx + offset;
+        offset++;
+        if (offset > H) break;
+        const r = Math.floor(dotIdx / 52);
+        const c = dotIdx % 52;
+        if (r >= currentLayout.rows) break;
+        const { cx, cy } = getDotCenter(r, c, currentLayout);
+        ctx.moveTo(cx + currentLayout.dotRadius, cy);
+        ctx.arc(cx, cy, currentLayout.dotRadius, 0, Math.PI * 2);
+      }
+      ctx.fill();
+    }
+  }
+
+  function animateSwapDots(dotIndices, colorVar = '--t-learn') {
+    if (!currentLayout || !dotIndices || dotIndices.length === 0) return;
+    const colors = getThemeColors();
+    const targetColor = resolveCssVar(`var(${colorVar})`, colors.brand);
+    let start = null;
+    const dur = 300;
+    function step(t) {
+      if (!start) start = t;
+      const progress = Math.min(1, (t - start) / dur);
+      const popScale = 1.0 + Math.sin(progress * Math.PI) * 0.7;
+
+      overlayCtx.clearRect(0, 0, currentLayout.width, currentLayout.height);
+      if (showOverlay) {
+        drawOverlayCurrentDot(overlayCtx, currentLayout, colors, {
+          row: stats.currentRow, col: stats.weekIndex, scale: 1, pulseAlpha: 0, showLabel: false
+        });
+      }
+
+      overlayCtx.save();
+      overlayCtx.fillStyle = targetColor;
+      for (const idx of dotIndices) {
+        const r = Math.floor(idx / 52);
+        const c = idx % 52;
+        if (r >= currentLayout.rows) continue;
+        const { cx, cy } = getDotCenter(r, c, currentLayout);
+        overlayCtx.beginPath();
+        overlayCtx.arc(cx, cy, currentLayout.dotRadius * popScale, 0, Math.PI * 2);
+        overlayCtx.fill();
+      }
+      overlayCtx.restore();
+
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      } else if (showOverlay) {
+        drawOverlayCurrentDot(overlayCtx, currentLayout, colors, {
+          row: stats.currentRow, col: stats.weekIndex, scale: 1, pulseAlpha: 0, showLabel: false
+        });
+      }
+    }
+    requestAnimationFrame(step);
+  }
+
   function handlePointer(e) {
     if (!tooltipEnabled || !currentLayout) return;
     const rect = canvas.getBoundingClientRect();
@@ -301,6 +374,8 @@ export function createGridComponent(containerEl, stats, initialView = VIEWS.OVER
     getView: () => activeView,
     showDotDetails,
     pulseDot,
+    redrawTimeRange,
+    animateSwapDots,
     drawEmpty: (alpha = 1) => drawEmptyGrid(ctx, currentLayout, getThemeColors(), alpha),
     drawLived: (row, col) => drawLivedDot(ctx, row, col, currentLayout, getThemeColors(), stats.currentRow),
     drawOverlay: (opts) => drawOverlayCurrentDot(overlayCtx, currentLayout, getThemeColors(), { row: stats.currentRow, col: stats.weekIndex, ...opts }),
