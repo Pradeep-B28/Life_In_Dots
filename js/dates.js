@@ -186,3 +186,100 @@ export function validateDate(year, month, day, todayDayNum) {
     dayNumber: enteredDayNum
   };
 }
+
+export function dotIndexForDate(dob, dateInput) {
+  const dobParts = typeof dob === 'number' ? fromDayNumber(dob) : dob;
+  const dobDay = typeof dob === 'number' ? dob : dayNumber(dob.year, dob.month, dob.day);
+
+  let targetDay;
+  if (typeof dateInput === 'number') {
+    targetDay = dateInput;
+  } else if (typeof dateInput === 'string') {
+    const [y, m, d] = dateInput.split('-').map(Number);
+    targetDay = dayNumber(y, m, d);
+  } else {
+    targetDay = dayNumber(dateInput.year, dateInput.month, dateInput.day);
+  }
+
+  if (targetDay < dobDay) return 0;
+
+  const age = getAge(dobParts, targetDay);
+  const bdayThisAge = addYears(dobParts, age);
+  const bdayDay = dayNumber(bdayThisAge.year, bdayThisAge.month, bdayThisAge.day);
+  const daysSinceBday = targetDay - bdayDay;
+  const week = Math.min(51, Math.floor(daysSinceBday / 7));
+  return age * 52 + week;
+}
+
+export function getAheadDots(totalDots, livedDots, isBonus = false) {
+  if (isBonus) return 0;
+  return Math.max(0, totalDots - livedDots - 1);
+}
+
+const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const SHORT_WEEKDAYS = ['Thu', 'Fri', 'Sat', 'Sun', 'Mon', 'Tue', 'Wed']; // 1 Jan 1970 was Thursday
+
+export function formatShortDate(dateInput) {
+  let parts;
+  if (typeof dateInput === 'number') {
+    parts = fromDayNumber(dateInput);
+  } else if (typeof dateInput === 'string') {
+    const [y, m, d] = dateInput.split('-').map(Number);
+    parts = { year: y, month: m, day: d };
+  } else {
+    parts = dateInput;
+  }
+  const monthStr = SHORT_MONTHS[parts.month - 1];
+  return `${parts.day} ${monthStr} ${parts.year}`;
+}
+
+export function formatNextUpDate(dateInput) {
+  let dayNum;
+  let parts;
+  if (typeof dateInput === 'number') {
+    dayNum = dateInput;
+    parts = fromDayNumber(dayNum);
+  } else if (typeof dateInput === 'string') {
+    const [y, m, d] = dateInput.split('-').map(Number);
+    parts = { year: y, month: m, day: d };
+    dayNum = dayNumber(y, m, d);
+  } else {
+    parts = dateInput;
+    dayNum = dayNumber(parts.year, parts.month, parts.day);
+  }
+  const weekdayIndex = ((dayNum % 7) + 7) % 7;
+  const weekdayStr = SHORT_WEEKDAYS[weekdayIndex];
+  const monthStr = SHORT_MONTHS[parts.month - 1];
+  return `${weekdayStr}, ${parts.day} ${monthStr} ${parts.year}`;
+}
+
+export function getInAboutText(daysAhead) {
+  if (daysAhead < 60) {
+    return `in ${daysAhead} days`;
+  }
+  if (daysAhead < 730) {
+    const m = Math.round(daysAhead / 30.44);
+    return `in about ${m} months`;
+  }
+  const y = Math.round(daysAhead / 365.25);
+  return `in about ${y} years`;
+}
+
+export function find1000thFullMoon(dobDayNum) {
+  let k = Math.ceil((dobDayNum - FULL_MOON_REF) / FULL_MOON_PERIOD) - 2;
+  while (Math.floor(FULL_MOON_REF + k * FULL_MOON_PERIOD) < dobDayNum) {
+    k++;
+  }
+  const targetK = k + 999;
+  return Math.floor(FULL_MOON_REF + targetK * FULL_MOON_PERIOD);
+}
+
+export function findNextMarsBirthday(dobDayNum, todayDayNum) {
+  let n = 1;
+  while (dobDayNum + Math.floor(n * 686.98) <= todayDayNum) {
+    n++;
+  }
+  const targetDay = dobDayNum + Math.floor(n * 686.98);
+  return { n, targetDay };
+}
+
