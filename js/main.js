@@ -12,7 +12,7 @@ import { createTabsComponent } from './tabs.js';
 import { VIEWS } from './layers.js';
 import { getHistoryData, getFlashbackPicks, createHistoryPanel } from './history.js';
 import { createChaptersPanel, resolveDotChapters, validateChapter } from './chapters.js';
-import { calculateMilestones } from './milestones.js';
+import { calculateMilestones, createMilestonesPanel } from './milestones.js';
 import { calculateTimeSplit, createTimePanel, DEFAULT_SLIDERS } from './timebudget.js';
 import { initAudio, getAudioContext } from './audio.js';
 
@@ -114,7 +114,14 @@ export function runUserFlow(container, initialValues = null, options = {}) {
 
       const historyData = getHistoryData(currentStats.dob, todayDayNum);
       const flashbackPicks = getFlashbackPicks(currentStats.dob, todayDayNum);
-      const milestonesData = calculateMilestones(currentStats.dob, currentStats.lifePicked, todayDayNum);
+      const endDateDayNum = currentStats.ahead ? currentStats.ahead.endDayNum : null;
+      const milestonesData = calculateMilestones(
+        currentStats.dob,
+        todayDayNum,
+        endDateDayNum,
+        currentStats.isBonus,
+        currentStats.totalDots
+      );
       const currentDotIdx = currentStats.currentRow * 52 + currentStats.weekIndex;
       const aheadDots = currentStats.isBonus ? 0 : Math.max(0, currentStats.totalDots - currentDotIdx - 1);
       const timeSplitData = calculateTimeSplit(DEFAULT_SLIDERS, '10years', aheadDots);
@@ -248,6 +255,21 @@ export function runUserFlow(container, initialValues = null, options = {}) {
               if (oldB === 3 && newB === 4) changedDots.push(startIdx + offset);
             }
             currentGrid.animateSwapDots(changedDots, '--t-learn');
+          }
+        });
+      }
+
+      const milestonesContent = tabs.panels[VIEWS.MILESTONES]?.querySelector('#panel-content-milestones');
+      if (milestonesContent) {
+        createMilestonesPanel(milestonesContent, {
+          milestonesData,
+          onMilestoneSelect: (m) => {
+            if (m.hasMarker && m.dotIndex >= 0) {
+              currentGrid.pulseDot(m.dotIndex);
+              currentGrid.showDotDetails(m.dotIndex);
+              const row = Math.floor(m.dotIndex / 52);
+              scrollToRow(row, 'top');
+            }
           }
         });
       }

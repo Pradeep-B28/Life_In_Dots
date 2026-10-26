@@ -1,0 +1,279 @@
+/* Milestones Tab Styling (UPGRADE_BRIEF.md Section 4H, Section 5) */
+
+.milestones-panel-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+}
+
+/* Next Up Card */
+.next-up-card {
+  position: relative;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-left: 4px solid var(--milestone);
+  border-radius: var(--radius, 12px);
+  padding: 18px 20px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.next-up-card:hover {
+  border-color: var(--milestone);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(8, 145, 178, 0.12);
+}
+
+.next-up-card:focus-visible {
+  outline: 2px solid var(--milestone);
+  outline-offset: 2px;
+}
+
+.next-up-eyebrow {
+  display: inline-block;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--milestone);
+  background: rgba(8, 145, 178, 0.1);
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-bottom: 8px;
+}
+
+[data-theme="dark"] .next-up-eyebrow {
+  background: rgba(34, 211, 238, 0.15);
+  color: var(--milestone);
+}
+
+.next-up-label {
+  font-size: 1.375rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.2;
+  margin-bottom: 6px;
+}
+
+.next-up-meta-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 0.875rem;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.next-up-date {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.next-up-dot-sep {
+  color: var(--border);
+  user-select: none;
+}
+
+.next-up-inabout {
+  color: var(--milestone);
+  font-weight: 600;
+}
+
+.next-up-age {
+  font-size: 0.875rem;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+
+.next-up-actions {
+  display: flex;
+  align-items: center;
+}
+
+.milestone-cal-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 8px;
+  background: var(--brand);
+  color: #FFFFFF;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.milestone-cal-btn:hover {
+  background: #047857;
+}
+
+[data-theme="dark"] .milestone-cal-btn:hover {
+  background: #059669;
+}
+
+.milestone-cal-btn:active {
+  transform: scale(0.98);
+}
+
+.milestone-cal-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* Milestones List */
+.milestones-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.milestone-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  user-select: none;
+}
+
+.milestone-item.interactive {
+  cursor: pointer;
+}
+
+.milestone-item.interactive:hover {
+  background: var(--surface-hover);
+  border-color: var(--milestone);
+}
+
+.milestone-item.interactive:focus-visible {
+  outline: 2px solid var(--milestone);
+  outline-offset: 1px;
+}
+
+/* Today state highlight */
+.milestone-item.milestone-today {
+  background: var(--brand-soft);
+  border-color: var(--brand);
+}
+
+.milestone-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.milestone-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.milestone-label {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.milestone-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  line-height: 1.2;
+}
+
+.badge-done {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.badge-done .check-icon {
+  width: 12px;
+  height: 12px;
+  stroke-width: 2.5;
+}
+
+.badge-today {
+  background: var(--brand);
+  color: #FFFFFF;
+}
+
+.milestone-meta-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.milestone-meta-sep {
+  color: var(--border);
+  user-select: none;
+}
+
+.milestone-inabout {
+  color: var(--milestone);
+  font-weight: 600;
+}
+
+.milestone-action {
+  flex-shrink: 0;
+}
+
+.milestone-list-cal-btn {
+  background: transparent;
+  color: var(--brand);
+  border: 1px solid var(--border);
+  padding: 5px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.milestone-list-cal-btn:hover {
+  background: var(--brand-soft);
+  border-color: var(--brand);
+}
+
+.milestone-list-cal-btn:active {
+  transform: scale(0.96);
+}
+
+/* Footnotes */
+.milestones-footnotes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 4px 4px 4px;
+  border-top: 1px dashed var(--border);
+  margin-top: 6px;
+}
+
+.milestone-footnote {
+  font-size: 0.75rem;
+  color: var(--muted);
+  line-height: 1.45;
+  margin: 0;
+}

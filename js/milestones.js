@@ -11,6 +11,8 @@ import {
   findNextMarsBirthday
 } from './dates.js';
 
+export { createMilestonesPanel, handleCalendarAction, downloadIcsFile } from './milestones-ui.js';
+
 export const FIXED_DAY_MILESTONES = [
   { label: '1,000 weeks old', days: 7000 },
   { label: '10,000 days old', days: 10000 },
