@@ -1,0 +1,200 @@
+/* History Tab Styling (Section 4E) */
+
+.history-panel-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+/* Category Filter Chips */
+.history-filters {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.history-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0.375rem 0.875rem;
+  border-radius: var(--radius-chip);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  touch-action: manipulation;
+  transition: background 150ms var(--ease), border-color 150ms var(--ease), color 150ms var(--ease);
+}
+
+.history-chip:hover {
+  border-color: var(--history);
+}
+
+.history-chip.active {
+  background: var(--history);
+  color: #0F172A;
+  font-weight: 700;
+  border-color: var(--history);
+}
+
+[data-theme="dark"] .history-chip.active {
+  background: var(--history);
+  color: #0F172A;
+}
+
+/* Lived Events List */
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  min-height: 48px;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: border-color 150ms var(--ease), background 150ms var(--ease), transform 150ms var(--ease);
+}
+
+.history-item:hover,
+.history-item:focus-visible {
+  border-color: var(--history);
+  background: rgba(217, 119, 6, 0.04);
+  outline: none;
+}
+
+.history-item:active {
+  transform: scale(0.99);
+}
+
+.history-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+}
+
+.history-item-date {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.history-item-title {
+  font-size: 0.875rem;
+  color: var(--text);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.history-age-chip {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-chip);
+  background: rgba(217, 119, 6, 0.12);
+  color: var(--history);
+  white-space: nowrap;
+}
+
+[data-theme="dark"] .history-age-chip {
+  background: rgba(251, 191, 36, 0.16);
+  color: var(--history);
+}
+
+/* Empty State */
+.history-empty {
+  padding: 1.5rem 1rem;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-style: italic;
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-card);
+}
+
+/* Collapsible "Before your first dot" */
+.history-before {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.history-before-summary {
+  padding: 0.75rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.history-before-summary::-webkit-details-marker {
+  display: none;
+}
+
+.history-before-summary::after {
+  content: "▸";
+  font-size: 0.875rem;
+  color: var(--muted);
+  transition: transform 150ms var(--ease);
+}
+
+.history-before[open] .history-before-summary::after {
+  transform: rotate(90deg);
+}
+
+.history-before-list {
+  padding: 0.5rem 1rem 0.875rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.history-before-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.history-before-title {
+  color: var(--text);
+}
+
+.history-before-year {
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* Footnote */
+.history-footnote {
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 0.25rem;
+}

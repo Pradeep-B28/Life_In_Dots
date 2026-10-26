@@ -10,7 +10,7 @@ import { startDemoMode } from './demo.js';
 import { initTheme } from './theme.js';
 import { createTabsComponent } from './tabs.js';
 import { VIEWS } from './layers.js';
-import { getHistoryData, getFlashbackPicks } from './history.js';
+import { getHistoryData, getFlashbackPicks, createHistoryPanel } from './history.js';
 import { calculateMilestones } from './milestones.js';
 import { calculateTimeSplit } from './timebudget.js';
 import { initAudio, getAudioContext } from './audio.js';
@@ -175,6 +175,24 @@ export function runUserFlow(container, initialValues = null, options = {}) {
       });
       window.__currentTabs = tabs;
 
+      const historyContent = tabs.panels[VIEWS.HISTORY]?.querySelector('#panel-content-history');
+      if (historyContent) {
+        createHistoryPanel(historyContent, {
+          historyData,
+          initialFilter: 'all',
+          onFilterChange: (filterId) => {
+            layerContext.activeFilter = filterId;
+            currentGrid.setLayer(VIEWS.HISTORY, layerContext);
+          },
+          onSelectEvent: (ev) => {
+            currentGrid.pulseDot(ev.dotIndex);
+            currentGrid.showDotDetails(ev.dotIndex);
+            const row = Math.floor(ev.dotIndex / 52);
+            scrollToRow(row, 'top');
+          }
+        });
+      }
+
       rightCol.insertBefore(tabs.laptopTabs, overviewWrapper);
       rightCol.appendChild(tabs.panelsContainer);
 
@@ -235,6 +253,14 @@ function init() {
   const isDemo = params.get('demo') === '1';
   const paramTab = params.get('tab') || params.get('view');
   const paramSeek = params.get('seek');
+  const paramDob = params.get('dob');
+  const paramLife = params.get('life');
+
+  let initVals = lastSubmittedValues;
+  if (paramDob) {
+    const [y, m, d] = paramDob.split('-').map(Number);
+    initVals = { dob: { year: y, month: m, day: d }, lifePicked: paramLife ? Number(paramLife) : 80 };
+  }
 
   if (isTest) {
     const testToday = params.get('today') || TEST_TODAY_STR;
@@ -244,7 +270,7 @@ function init() {
   } else if (isDemo) {
     startDemoMode(document.getElementById('app-content'), { runUserFlow });
   } else {
-    runUserFlow(document.getElementById('app-content'), lastSubmittedValues, {
+    runUserFlow(document.getElementById('app-content'), initVals, {
       autoStart: !!paramTab || paramSeek !== null,
       seekTime: paramSeek !== null ? parseFloat(paramSeek) : (paramTab ? 99 : null),
       initialTab: paramTab

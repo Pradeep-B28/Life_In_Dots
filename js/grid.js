@@ -3,7 +3,24 @@ import { dayNumber, fromDayNumber, addYears } from './dates.js';
 import { getThemeColors, resolveCssVar, getRowColor } from './colors.js';
 import { getDotLayerStyle, renderLegend, getDotTooltipDetails, VIEWS } from './layers.js';
 
-export { getThemeColors, resolveCssVar, getRowColor };
+import {
+  drawAgeGutter,
+  drawEmptyGrid,
+  drawLivedDot,
+  drawOverlayCurrentDot,
+  drawGrid
+} from './grid-draw.js';
+
+export {
+  getThemeColors,
+  resolveCssVar,
+  getRowColor,
+  drawAgeGutter,
+  drawEmptyGrid,
+  drawLivedDot,
+  drawOverlayCurrentDot,
+  drawGrid
+};
 
 export function computeGridLayout(rows, availWidth, availHeight = null, isLaptop = false) {
   const gutterWidth = isLaptop ? 24 : 20;
@@ -56,150 +73,6 @@ export function hitTestDot(x, y, layout) {
   return (row < rows) ? { row, col } : null;
 }
 
-export function drawAgeGutter(ctx, layout, colors) {
-  ctx.font = '11px ui-sans-serif, system-ui, -apple-system, sans-serif';
-  ctx.fillStyle = colors.muted;
-  ctx.textAlign = 'right';
-  ctx.textBaseline = 'middle';
-  const maxDecade = Math.floor((layout.rows - 1) / 10);
-  for (let d = 0; d <= maxDecade; d++) {
-    const row = d * 10;
-    const { cy } = getDotCenter(row, 0, layout);
-    ctx.fillText(String(row), layout.gutterWidth - 5, cy);
-  }
-}
-
-export function drawEmptyGrid(ctx, layout, colors, alpha = 1) {
-  ctx.clearRect(0, 0, layout.width, layout.height);
-  drawAgeGutter(ctx, layout, colors);
-  ctx.save();
-  ctx.globalAlpha = alpha;
-  ctx.fillStyle = colors.future;
-  ctx.beginPath();
-  for (let r = 0; r < layout.rows; r++) {
-    for (let col = 0; col < 52; col++) {
-      const { cx, cy } = getDotCenter(r, col, layout);
-      ctx.moveTo(cx + layout.dotRadius, cy);
-      ctx.arc(cx, cy, layout.dotRadius, 0, Math.PI * 2);
-    }
-  }
-  ctx.fill();
-  ctx.restore();
-}
-
-export function drawLivedDot(ctx, row, col, layout, colors, currentRow) {
-  const { cx, cy } = getDotCenter(row, col, layout);
-  ctx.fillStyle = getRowColor(row, currentRow, colors);
-  ctx.beginPath();
-  ctx.arc(cx, cy, layout.dotRadius, 0, Math.PI * 2);
-  ctx.fill();
-}
-
-export function drawOverlayCurrentDot(ctx, layout, colors, options = {}) {
-  const { row, col, scale = 1, pulseScale = 1, pulseAlpha = 0, showLabel = false } = options;
-  ctx.clearRect(0, 0, layout.width, layout.height);
-  const { cx, cy } = getDotCenter(row, col, layout);
-  const r = layout.dotRadius * scale;
-
-  if (pulseAlpha > 0) {
-    ctx.beginPath(); ctx.arc(cx, cy, layout.dotRadius * pulseScale * 1.9, 0, Math.PI * 2);
-    ctx.lineWidth = 2; ctx.strokeStyle = `rgba(4, 120, 87, ${pulseAlpha})`; ctx.stroke();
-  }
-
-  ctx.beginPath(); ctx.arc(cx, cy, r * 2.2, 0, Math.PI * 2);
-  ctx.fillStyle = colors.brandSoft; ctx.fill();
-
-  ctx.beginPath(); ctx.arc(cx, cy, r * 1.9, 0, Math.PI * 2);
-  ctx.lineWidth = 2; ctx.strokeStyle = colors.now; ctx.stroke();
-
-  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.fillStyle = colors.now; ctx.fill();
-
-  if (showLabel) {
-    const isTop = row < 4;
-    const lineLen = 14;
-    const labelY = isTop ? cy + r * 1.9 + lineLen : cy - r * 1.9 - lineLen;
-    ctx.beginPath(); ctx.moveTo(cx, isTop ? cy + r * 1.9 : cy - r * 1.9); ctx.lineTo(cx, labelY);
-    ctx.strokeStyle = colors.now; ctx.lineWidth = 1.5; ctx.stroke();
-
-    const text = 'You are here';
-    ctx.font = '700 11px ui-sans-serif, system-ui, -apple-system, sans-serif';
-    const boxW = ctx.measureText(text).width + 12;
-    const boxH = 18;
-    const [boxX, boxY] = [cx - boxW / 2, isTop ? labelY : labelY - boxH];
-
-    ctx.fillStyle = colors.now;
-    ctx.beginPath();
-    if (ctx.roundRect) ctx.roundRect(boxX, boxY, boxW, boxH, 4);
-    else ctx.rect(boxX, boxY, boxW, boxH);
-    ctx.fill();
-
-    ctx.fillStyle = '#FFFFFF'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(text, cx, boxY + boxH / 2);
-  }
-}
-
-export function drawGrid(ctx, layout, stats, colors, view = VIEWS.OVERVIEW, layerContext = null) {
-  drawEmptyGrid(ctx, layout, colors);
-  const isCustomView = view !== VIEWS.OVERVIEW || (layerContext && layerContext.hasAnyChapters);
-
-  if (!isCustomView) {
-    for (let r = 0; r < Math.min(layout.rows, stats.currentRow); r++) {
-      ctx.fillStyle = getRowColor(r, stats.currentRow, colors);
-      ctx.beginPath();
-      for (let c = 0; c < 52; c++) {
-        const { cx, cy } = getDotCenter(r, c, layout);
-        ctx.moveTo(cx + layout.dotRadius, cy);
-        ctx.arc(cx, cy, layout.dotRadius, 0, Math.PI * 2);
-      }
-      ctx.fill();
-    }
-    if (stats.currentRow < layout.rows && stats.weekIndex > 0) {
-      ctx.fillStyle = getRowColor(stats.currentRow, stats.currentRow, colors);
-      ctx.beginPath();
-      for (let c = 0; c < stats.weekIndex; c++) {
-        const { cx, cy } = getDotCenter(stats.currentRow, c, layout);
-        ctx.moveTo(cx + layout.dotRadius, cy);
-        ctx.arc(cx, cy, layout.dotRadius, 0, Math.PI * 2);
-      }
-      ctx.fill();
-    }
-    return;
-  }
-
-  const total = layout.rows * 52;
-  const ctxLayer = layerContext || {};
-
-  for (let idx = 0; idx < total; idx++) {
-    const r = Math.floor(idx / 52);
-    const c = idx % 52;
-    if (r >= layout.rows) break;
-    const { cx, cy } = getDotCenter(r, c, layout);
-    const style = getDotLayerStyle(idx, view, ctxLayer);
-
-    ctx.save();
-    ctx.globalAlpha = style.opacity ?? 1;
-    ctx.fillStyle = resolveCssVar(style.color, colors.future);
-    ctx.beginPath();
-    ctx.arc(cx, cy, layout.dotRadius, 0, Math.PI * 2);
-    ctx.fill();
-
-    if (style.marker) {
-      const ringColor = resolveCssVar(style.marker.color, '#0891B2');
-      ctx.beginPath();
-      ctx.arc(cx, cy, layout.dotRadius * 1.6, 0, Math.PI * 2);
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = ringColor;
-      if (style.marker.filled) {
-        ctx.fillStyle = ringColor;
-        ctx.fill();
-      }
-      ctx.stroke();
-    }
-    ctx.restore();
-  }
-}
-
 export function createGridComponent(containerEl, stats, initialView = VIEWS.OVERVIEW, initialContext = null) {
   containerEl.textContent = '';
   const gridWrapper = document.createElement('div');
@@ -224,10 +97,7 @@ export function createGridComponent(containerEl, stats, initialView = VIEWS.OVER
 
   const overlayCanvas = document.createElement('canvas');
   overlayCanvas.className = 'grid-overlay-canvas';
-  overlayCanvas.style.position = 'absolute';
-  overlayCanvas.style.left = '0.5rem';
-  overlayCanvas.style.top = '0.5rem';
-  overlayCanvas.style.pointerEvents = 'none';
+  overlayCanvas.style.cssText = 'position:absolute;left:0.5rem;top:0.5rem;pointer-events:none;';
   card.appendChild(overlayCanvas);
 
   const tooltip = document.createElement('div');
@@ -244,7 +114,6 @@ export function createGridComponent(containerEl, stats, initialView = VIEWS.OVER
   note.className = 'grid-note';
   note.textContent = 'One row is one year of your age, with 52 dots.';
   gridWrapper.appendChild(note);
-
   containerEl.appendChild(gridWrapper);
 
   let currentLayout = null;
@@ -352,8 +221,45 @@ export function createGridComponent(containerEl, stats, initialView = VIEWS.OVER
     });
 
     tooltip.style.display = 'block';
-    tooltip.style.left = `${cx + 8}px`;
+    const leftPos = (cx + 180 > currentLayout.width) ? Math.max(8, cx - 170) : cx + 8;
+    tooltip.style.left = `${leftPos}px`;
     tooltip.style.top = `${cy + 8 - 12}px`;
+  }
+
+  function showDotDetails(dotIndex) {
+    if (!currentLayout) return;
+    const r = Math.floor(dotIndex / 52);
+    const c = dotIndex % 52;
+    showTooltip(r, c);
+  }
+
+  function pulseDot(dotIndex) {
+    if (!currentLayout) return;
+    const r = Math.floor(dotIndex / 52);
+    const c = dotIndex % 52;
+    const { cx, cy } = getDotCenter(r, c, currentLayout);
+    let start = null;
+    const dur = 600;
+    function frame(t) {
+      if (!start) start = t;
+      const progress = Math.min(1, (t - start) / dur);
+      const ease = 1 - Math.pow(1 - progress, 2);
+      const radius = currentLayout.dotRadius * (1 + ease * 3);
+      const alpha = (1 - ease) * 0.9;
+      overlayCtx.clearRect(0, 0, currentLayout.width, currentLayout.height);
+      if (showOverlay) {
+        drawOverlayCurrentDot(overlayCtx, currentLayout, getThemeColors(), {
+          row: stats.currentRow, col: stats.weekIndex, scale: 1, pulseAlpha: 0, showLabel: false
+        });
+      }
+      overlayCtx.beginPath();
+      overlayCtx.arc(cx, cy, radius, 0, Math.PI * 2);
+      overlayCtx.lineWidth = 2.5;
+      overlayCtx.strokeStyle = `rgba(217, 119, 6, ${alpha})`;
+      overlayCtx.stroke();
+      if (progress < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
   }
 
   function handlePointer(e) {
@@ -367,7 +273,9 @@ export function createGridComponent(containerEl, stats, initialView = VIEWS.OVER
   canvas.addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse') handlePointer(e); });
   canvas.addEventListener('pointerleave', () => { tooltip.style.display = 'none'; });
   canvas.addEventListener('pointerdown', (e) => { e.stopPropagation(); handlePointer(e); });
-  document.addEventListener('pointerdown', (e) => { if (!card.contains(e.target)) tooltip.style.display = 'none'; });
+  document.addEventListener('pointerdown', (e) => {
+    if (!card.contains(e.target) && !e.target.closest('[data-dot-index]')) tooltip.style.display = 'none';
+  });
 
   let resizeTimer = null;
   window.addEventListener('resize', () => {
@@ -391,6 +299,8 @@ export function createGridComponent(containerEl, stats, initialView = VIEWS.OVER
     setRevealing: (on = true) => { isRevealing = on; },
     setLayer,
     getView: () => activeView,
+    showDotDetails,
+    pulseDot,
     drawEmpty: (alpha = 1) => drawEmptyGrid(ctx, currentLayout, getThemeColors(), alpha),
     drawLived: (row, col) => drawLivedDot(ctx, row, col, currentLayout, getThemeColors(), stats.currentRow),
     drawOverlay: (opts) => drawOverlayCurrentDot(overlayCtx, currentLayout, getThemeColors(), { row: stats.currentRow, col: stats.weekIndex, ...opts }),
