@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Brand Comparison</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 1920px;
+      height: 960px;
+      display: flex;
+      background: #F3F4F6;
+      font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+    }
+    .panel {
+      flex: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      border-right: 2px solid #E5E7EB;
+      overflow: hidden;
+    }
+    .panel:last-child { border-right: none; }
+    .label {
+      padding: 14px 24px;
+      background: #FFFFFF;
+      border-bottom: 1px solid #E5E7EB;
+      font-weight: 800;
+      font-size: 18px;
+      color: #111827;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .badge {
+      font-size: 13px;
+      font-weight: 700;
+      color: #059669;
+      background: #D1FAE5;
+      padding: 4px 10px;
+      border-radius: 999px;
+    }
+    .preview-wrap {
+      flex: 1;
+      background: #FFFFFF;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+    .preview-wrap img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <div class="label">
+      <span>wrench-wise.com (Official Site)</span>
+      <span class="badge">Reference Brand</span>
+    </div>
+    <div class="preview-wrap">
+      <img src="file:///C:/Users/DELL/.gemini/antigravity-cli/brain/76b7c87e-8cd1-47c4-9ce3-b5436161c58d/brand_wrench_wise.png" alt="Wrench Wise">
+    </div>
+  </div>
+  <div class="panel">
+    <div class="label">
+      <span>Your Life in Dots (Our Web App)</span>
+      <span class="badge">Pixel-Matched Design</span>
+    </div>
+    <div class="preview-wrap">
+      <img src="file:///C:/Users/DELL/.gemini/antigravity-cli/brain/76b7c87e-8cd1-47c4-9ce3-b5436161c58d/app_laptop_light.png" alt="Your Life in Dots">
+    </div>
+  </div>
+</body>
+</html>

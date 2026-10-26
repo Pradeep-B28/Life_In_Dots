@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>OG Image Generator - Your Life in Dots</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 1200px;
+      height: 630px;
+      overflow: hidden;
+      background: linear-gradient(135deg, #ECFDF5 0%, #FFFFFF 45%, #ECFEFF 100%);
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 70px;
+    }
+    .top-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: linear-gradient(90deg, #059669, #0D9488, #06B6D4);
+    }
+    .left-col {
+      max-width: 500px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-logo {
+      height: 38px;
+      width: auto;
+    }
+    .brand-title {
+      font-size: 24px;
+      font-weight: 800;
+      color: #059669;
+      letter-spacing: -0.01em;
+    }
+    .hero-title {
+      font-size: 66px;
+      font-weight: 800;
+      line-height: 1.08;
+      letter-spacing: -0.025em;
+      color: #111827;
+    }
+    .hero-subtitle {
+      font-size: 24px;
+      line-height: 1.4;
+      color: #4B5563;
+      font-weight: 450;
+    }
+    .badge-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: #D1FAE5;
+      color: #047857;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 16px;
+      width: fit-content;
+    }
+    .right-card {
+      width: 510px;
+      height: 480px;
+      background: #FFFFFF;
+      border: 1px solid #E5E7EB;
+      border-radius: 20px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    canvas {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="top-bar"></div>
+  <div class="left-col">
+    <div class="brand-wrap">
+      <img src="../assets/logo.png" alt="Wrench Wise" class="brand-logo" onerror="this.style.display='none'; document.getElementById('wordmark').style.display='inline';">
+      <span id="wordmark" class="brand-title" style="display: none;">Wrench Wise</span>
+    </div>
+    <h1 class="hero-title">Your life in dots</h1>
+    <p class="hero-subtitle">One dot for every week of your life. See yours in 10 seconds.</p>
+    <div class="badge-wrap">
+      <span>wrench-wise.com</span>
+    </div>
+  </div>
+
+  <div class="right-card">
+    <canvas id="og-canvas" width="460" height="430"></canvas>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('og-canvas');
+    const ctx = canvas.getContext('2d');
+    const cols = 52;
+    const rows = 35;
+    const s = 460 / cols;
+    const r = (s * 0.72) / 2;
+
+    const fromCol = [5, 150, 105];
+    const midCol = [13, 148, 136];
+    const toCol = [6, 182, 212];
+
+    function interp(c1, c2, f) {
+      return [
+        Math.round(c1[0] + f * (c2[0] - c1[0])),
+        Math.round(c1[1] + f * (c2[1] - c1[1])),
+        Math.round(c1[2] + f * (c2[2] - c1[2]))
+      ];
+    }
+
+    const livedCutoffRow = 14;
+    const livedCutoffCol = 28;
+
+    for (let row = 0; row < rows; row++) {
+      let rowColor;
+      const progress = row / Math.max(1, livedCutoffRow);
+      if (progress < 0.5) {
+        const c = interp(fromCol, midCol, progress * 2);
+        rowColor = `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
+      } else {
+        const c = interp(midCol, toCol, (progress - 0.5) * 2);
+        rowColor = `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
+      }
+
+      for (let col = 0; col < cols; col++) {
+        const cx = col * s + s / 2;
+        const cy = row * (430 / rows) + (430 / rows) / 2;
+
+        const isLived = (row < livedCutoffRow) || (row === livedCutoffRow && col < livedCutoffCol);
+        const isCurrent = (row === livedCutoffRow && col === livedCutoffCol);
+
+        if (isCurrent) {
+          ctx.beginPath();
+          ctx.arc(cx, cy, r * 2.2, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(5, 150, 105, 0.25)';
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(cx, cy, r * 1.8, 0, Math.PI * 2);
+          ctx.lineWidth = 1.5;
+          ctx.strokeStyle = '#047857';
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.arc(cx, cy, r, 0, Math.PI * 2);
+          ctx.fillStyle = '#047857';
+          ctx.fill();
+        } else {
+          ctx.beginPath();
+          ctx.arc(cx, cy, r, 0, Math.PI * 2);
+          ctx.fillStyle = isLived ? rowColor : '#D1D5DB';
+          ctx.fill();
+        }
+      }
+    }
+  </script>
+</body>
+</html>

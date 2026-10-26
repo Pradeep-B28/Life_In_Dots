@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Share Image Renderer</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { width: 1080px; height: 1350px; overflow: hidden; background: #FFFFFF; }
+    canvas { display: block; width: 1080px; height: 1350px; }
+  </style>
+</head>
+<body>
+  <div id="container"></div>
+  <script type="module">
+    import { calculateLifeStats } from '../js/stats.js';
+    import { dayNumber } from '../js/dates.js';
+    import { createShareCanvas } from '../js/shareImage.js';
+
+    const params = new URLSearchParams(window.location.search);
+    const caseId = (params.get('case') || 'A').toUpperCase();
+
+    const cases = {
+      A: { dob: { year: 2004, month: 6, day: 12 }, life: 80 },
+      G: { dob: { year: 1926, month: 1, day: 1 }, life: 80 }
+    };
+
+    const target = cases[caseId] || cases.A;
+    const today = dayNumber(2026, 10, 23);
+    const stats = calculateLifeStats(target.dob, target.life, today);
+
+    const logo = new Image();
+    logo.onload = () => {
+      const cvs = createShareCanvas(stats, logo);
+      document.getElementById('container').appendChild(cvs);
+      window.__rendered = true;
+    };
+    logo.onerror = () => {
+      const cvs = createShareCanvas(stats, null);
+      document.getElementById('container').appendChild(cvs);
+      window.__rendered = true;
+    };
+    logo.src = '../assets/logo.png';
+  </script>
+</body>
+</html>

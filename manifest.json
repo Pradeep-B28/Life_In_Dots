@@ -1,0 +1,16 @@
+{
+  "name": "Your Life in Dots",
+  "short_name": "Life in Dots",
+  "description": "One dot for every week of your life. See yours in 10 seconds.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#059669",
+  "icons": [
+    {
+      "src": "assets/favicon.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png"
+    }
+  ]
+}

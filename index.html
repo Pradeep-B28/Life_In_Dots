@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#FFFFFF">
+  <title>Your Life in Dots by Wrench Wise</title>
+  <meta name="description" content="One dot for every week of your life. See yours in 10 seconds.">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Your Life in Dots by Wrench Wise">
+  <meta property="og:description" content="One dot for every week of your life. See yours in 10 seconds.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://wrench-wise.com/life-in-dots">
+  <meta property="og:image" content="https://wrench-wise.com/life-in-dots/assets/og-image.png">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Your Life in Dots by Wrench Wise">
+  <meta name="twitter:description" content="One dot for every week of your life. See yours in 10 seconds.">
+  <meta name="twitter:image" content="https://wrench-wise.com/life-in-dots/assets/og-image.png">
+
+  <!-- App icon and manifest -->
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-content">
+      <img src="assets/logo.png" alt="Wrench Wise" class="header-logo" onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='inline';">
+      <span id="logo-fallback" style="display: none; font-weight: 800; color: var(--brand);">Wrench Wise</span>
+      <div class="header-divider" aria-hidden="true"></div>
+      <h1 class="header-title">Your Life in Dots</h1>
+      <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle dark theme" title="Toggle theme">
+        <svg class="sun-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        <svg class="moon-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+    </div>
+    <div class="header-bar" aria-hidden="true"></div>
+  </header>
+
+  <main class="app-main" id="app-main">
+    <div id="test-output"></div>
+
+    <!-- App shell content container for subsequent phases -->
+    <div id="app-content"></div>
+  </main>
+
+  <footer class="app-footer">
+    <p>Built with code by Wrench Wise</p>
+    <p>
+      <a href="https://wrench-wise.com/?utm_source=life-in-dots&utm_medium=web-app&utm_campaign=life-in-dots-2026" target="_blank" rel="noopener noreferrer">Learn to build apps like this</a>
+    </p>
+  </footer>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
