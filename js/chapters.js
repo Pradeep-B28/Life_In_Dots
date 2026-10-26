@@ -3,6 +3,8 @@
 
 import { dayNumber, fromDayNumber, daysInMonth, dotIndexForDate } from './dates.js';
 
+export { createChaptersPanel } from './chapters-ui.js';
+
 export const CHAPTER_COLORS = [
   '--ch-1',
   '--ch-2',

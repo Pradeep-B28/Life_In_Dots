@@ -11,6 +11,7 @@ import { initTheme } from './theme.js';
 import { createTabsComponent } from './tabs.js';
 import { VIEWS } from './layers.js';
 import { getHistoryData, getFlashbackPicks, createHistoryPanel } from './history.js';
+import { createChaptersPanel, resolveDotChapters, validateChapter } from './chapters.js';
 import { calculateMilestones } from './milestones.js';
 import { calculateTimeSplit } from './timebudget.js';
 import { initAudio, getAudioContext } from './audio.js';
@@ -189,6 +190,23 @@ export function runUserFlow(container, initialValues = null, options = {}) {
             currentGrid.showDotDetails(ev.dotIndex);
             const row = Math.floor(ev.dotIndex / 52);
             scrollToRow(row, 'top');
+          }
+        });
+      }
+
+      const chaptersContent = tabs.panels[VIEWS.CHAPTERS]?.querySelector('#panel-content-chapters');
+      if (chaptersContent) {
+        createChaptersPanel(chaptersContent, {
+          dob: currentStats.dob,
+          todayDayNum,
+          initialChapters: layerContext.chapters || [],
+          onChaptersChange: (updatedChapters) => {
+            const validChapters = updatedChapters.filter(ch => validateChapter(ch, currentStats.dob, todayDayNum).valid);
+            const dotMap = resolveDotChapters(updatedChapters, currentStats.totalDots, currentStats.dob, todayDayNum);
+            layerContext.chapters = validChapters;
+            layerContext.dotChapterMap = dotMap;
+            layerContext.hasAnyChapters = validChapters.length > 0;
+            currentGrid.setLayer(currentGrid.getView(), layerContext);
           }
         });
       }
