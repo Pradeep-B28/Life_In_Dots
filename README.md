@@ -1,138 +1,85 @@
-<div align="center">
+# Your Life in Dots — Lifespan in Weeks Visualizer & Temporal Geometry
 
-# ⚪ Your Life in Dots
-### *Visual Life Map in Weeks: Perspective on Time Lived and Sundays Ahead*
-
-A clean, responsive visual canvas mapping an entire human lifespan into weeks. One dot represents one week.
-
-[![Live Deployment](https://img.shields.io/badge/Live_App-lifeindots.vercel.app-06B6D4?style=for-the-badge&logo=vercel&logoColor=white)](https://lifeindots.vercel.app)
-[![Autonomous Demo](https://img.shields.io/badge/Demo-Interactive_Reel-8B5CF6?style=for-the-badge&logo=googlechrome&logoColor=white)](https://lifeindots.vercel.app/?demo=1)
-[![Self-Test Suite](https://img.shields.io/badge/Test_Suite-Passing-22C55E?style=for-the-badge&logo=checkmarx&logoColor=white)](https://lifeindots.vercel.app/?test=1)
-[![GitHub Repository](https://img.shields.io/badge/GitHub-Pradeep--B28%2FLife__In__Dots-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Pradeep-B28/Life_In_Dots)
-[![Author](https://img.shields.io/badge/Author-Pradeep_B-0B2A45?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/pradeepb-2k)
-[![License: MIT](https://img.shields.io/badge/License-MIT-F59E0B?style=for-the-badge)](LICENSE)
-
-<p align="center">
-  <a href="#-project-overview">Overview</a> •
-  <a href="#-5-interactive-view-layers">5 View Layers</a> •
-  <a href="#-mathematical-foundations--precision">Math & Algorithms</a> •
-  <a href="#-strict-client-side-privacy">Privacy</a> •
-  <a href="#-multi-format-export--sharing">Social Sharing</a> •
-  <a href="#-repository-structure">Architecture</a> •
-  <a href="#-local-development">Local Setup</a> •
-  <a href="#-author--contact">Author & Contact</a>
-</p>
-
-</div>
+> **Live Application:** [lifeindots.vercel.app](https://lifeindots.vercel.app/)  
+> **Autonomous Interactive Reel:** [lifeindots.vercel.app/?demo=1](https://lifeindots.vercel.app/?demo=1)  
+> **In-Browser Test Suite:** [lifeindots.vercel.app/?test=1](https://lifeindots.vercel.app/?test=1)  
+> **Author:** [B Pradeep](https://github.com/Pradeep-B28) · [Portfolio](https://pradeep-b28.github.io/Pradeep-B28/)
 
 ---
 
-## ⏳ Project Overview
+## Overview
 
-**Your Life in Dots** transforms abstract calendar time into a tangible, geometric perspective. By rendering an entire life grid—52 columns wide (one per week of a year) across 70, 80, 90, or 100 rows—users instantly visualize the proportion of life lived, the transient nature of routine, and the precious number of Sundays remaining.
+**Your Life in Dots** renders an entire human lifespan as an interactive, geometric grid of weeks—52 columns wide (one per week of a year) across 70, 80, 90, or 100 rows. It gives users immediate perspective on the proportion of life lived, recurring life chapters, and the number of Sundays ahead.
 
-- **Zero-Dependency Engine:** Pure HTML5 Canvas, modern CSS, and Vanilla JavaScript.
-- **Cinematic Zoom & Pan:** Smooth 4-stage camera glide zooming from initial infancy dots to the complete macroscopic life canvas.
-- **Dual Theme Support:** Custom dark slate and light minimalist themes.
+Engineered with zero third-party libraries using pure HTML5 Canvas, modern CSS variables, and Vanilla JavaScript (ES modules).
+
+```mermaid
+flowchart TD
+    DOB["User Date of Birth (UTC Calendar)"] --> UTCMath["Integer Epoch Arithmetic\n(UTC day calculation eliminating DST / Leap drifts)"]
+    
+    UTCMath --> GridEngine["O(1) Grid Geometry Engine\n(Row = week / 52 · Col = week % 52)"]
+    
+    subgraph 5 Interactive Canvas Layers
+        Overview["Overview Layer\n(Pulsing current week dot & % lived)"]
+        History["History Synchronization\n(Highlight world & tech milestones on user lifespan)"]
+        Chapters["Life Chapters Engine\n(School, University, Career eras with overlap resolution)"]
+        TimeBudget["Time Budget Calculator\n(Weekly hours in sleep, work, screen, recovery)"]
+        Milestones["Planetary & Lunar Milestones\n(10,000th day, billionth heartbeat, synodic moon phases)"]
+    end
+    
+    GridEngine --> Overview
+    GridEngine --> History
+    GridEngine --> Chapters
+    GridEngine --> TimeBudget
+    GridEngine --> Milestones
+    
+    Overview --> CanvasRenderer["High-DPI Canvas Renderer\n(Smooth 4-stage camera pan & zoom)"]
+```
 
 ---
 
-## 🎨 5 Interactive View Layers
+## Mathematical Foundations & Precision
 
-1. **Overview:** Complete life grid featuring a pulsing present-week indicator, exact percentage completed, and count of upcoming Sundays.
-2. **History:** Curated scientific, technological, and cultural milestones across the user's lifespan. Tapping any historical event highlights that exact week on the life grid.
-3. **Chapters:** Interactive color-coded life phases (School, College, Career, Personal Eras) with dynamic canvas updates and intelligent overlap resolution.
-4. **Time Budget:** Interactive weekly time allocation across Sleep, Work, Screen Time, and Free Time. Features an instant hour-swap calculator demonstrating how 1 hour saved per day recovers months of learning weeks over a lifetime.
-5. **Milestones:** Exact calculations for milestone events including 10,000th day, 100th full moon, billionth heartbeat, and Martian birthdays with one-click calendar exports.
-
----
-
-## 📐 Mathematical Foundations & Precision
-
-- **Integer UTC Day Calculation:** Dates are converted to integer days elapsed since January 1, 1970 UTC, completely preventing daylight saving drift, leap year edge cases, and timezone distortion.
-- **Constant-Time O(1) Grid Arithmetic:** With 52 columns per row, dot positions are calculated via direct division and modulus rather than iterating through thousands of DOM elements.
-- **Synodic Lunar Modeling:** Full moon calculations leverage the high-precision synodic period ($T = 29.530588853\text{ days}$) calibrated against the reference full moon of January 13, 2025 at 22:27 UTC.
-- **Integer Week Time Discretization:** Daily time budget hours are converted into integer weeks using standard whole-number division, eliminating sub-pixel rendering artifacts and preserving exact week sums.
+| Domain | Mathematical Implementation |
+| :--- | :--- |
+| **Integer UTC Day Calculation** | Dates are converted to integer days elapsed since `January 1, 1970 00:00:00 UTC`, completely preventing daylight saving shifts, leap second anomalies, and client timezone distortions. |
+| **Constant-Time $O(1)$ Grid Indexing** | With 52 columns per row, dot positions are calculated via direct arithmetic division and modulus: `row = Math.floor(week / 52)` and `col = week % 52`, rather than querying thousands of DOM nodes. |
+| **Synodic Lunar Phase Engine** | Full moon milestones leverage the high-precision astronomical synodic period ($T = 29.530588853\text{ days}$) calibrated against the reference astronomical full moon of January 13, 2025 at 22:27 UTC. |
+| **Discretized Time Budgeting** | Daily time budget hours are converted into integer weeks using standard whole-number division, eliminating sub-pixel rendering artifacts and preserving exact week sums. |
 
 ---
 
-## 🔒 Strict Client-Side Privacy
+## Strict Client-Side Privacy
 
-- **Zero Tracking:** Date of birth and custom life chapters are processed solely in volatile browser RAM.
+- **Zero Tracking:** Date of birth, custom life chapters, and time budgets are processed strictly in volatile browser RAM.
 - **No Cookies or Local Storage for PII:** Sensitive personal details are never saved to disk, cookies, or remote databases.
 - **Zero Network Transmission:** All math, canvas rendering, and image generation occurs on your device.
 
 ---
 
-## 📤 Multi-Format Export & Sharing
+## Local Development Setup
 
-Generates beautiful high-resolution shareable summary cards:
-- **Status / Stories:** 9:16 vertical ratio (1080 × 1920) formatted for WhatsApp, Instagram Stories, and TikTok.
-- **Feed Posts:** 4:5 portrait ratio (1080 × 1350) optimized for LinkedIn, X (Twitter), and Instagram feeds.
+No compilation or build tools required.
 
----
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/Pradeep-B28/Life_In_Dots.git
+   cd Life_In_Dots
+   ```
 
-## 📂 Repository Structure
+2. **Serve with any local static HTTP server:**
+   ```bash
+   # Using Python 3
+   python -m http.server 8000
+   ```
 
-```
-Life_In_Dots/
-├── index.html        Main application structure, modal dialogs, and SVG icons
-├── styles.css        Design tokens, dark/light themes, typography, and responsive grid
-├── manifest.json     PWA manifest and mobile app icons
-├── LICENSE           MIT Open Source License
-├── README.md         Technical documentation, mathematics, and setup
-├── REEL_SCRIPT.md    Short video recording scripts
-├── assets/           Favicon, open-graph preview image, and brand logos
-└── js/
-    ├── main.js       Application bootstrap and state management
-    ├── canvas.js     High-DPI life grid rendering and camera zoom animation
-    ├── time.js       Time budget allocation and hourly recovery calculator
-    ├── chapters.js   Life chapter era definitions and canvas highlight engine
-    ├── milestones.js High-precision planetary and lunar milestone calculations
-    ├── history.js    Curated historical milestones and sync engine
-    ├── share.js      Canvas-based image generator for 9:16 and 4:5 social cards
-    ├── audio.js      Web Audio gentle synthetic tone generator
-    └── test.js       Automated date and coordinate verification tests
-```
+3. **Open in browser:**
+   ```
+   http://localhost:8000/
+   ```
 
 ---
 
-## 💻 Local Development
+## License
 
-Run the application locally without any dependencies:
-
-```bash
-# Clone the repository
-git clone https://github.com/Pradeep-B28/Life_In_Dots.git
-cd Life_In_Dots
-
-# Run local web server
-python -m http.server 8000
-```
-Open `http://localhost:8000` in your web browser.
-
-- **Run Self-Test Verification:** `http://localhost:8000/?test=1`
-- **Run Automated Demo Reel:** `http://localhost:8000/?demo=1`
-
----
-
-## 📄 License
-
-This project is open-source and released under the **[MIT License](LICENSE)**.
-
-```
-Copyright (c) 2026 Pradeep B (Pradeep-B28) & Wrench Wise
-```
-
----
-
-## 👨‍💻 Author & Contact
-
-**Pradeep B**  
-*Java & DSA Master Trainer | Full-Stack Architect | Web Platform Engineer*
-
-- 🌐 **Softech Career & Placement Portal:** [reachsoftech.onrender.com](https://reachsoftech.onrender.com/home)
-- 🌌 **3D Interactive Developer Portfolio:** [pradeep-b28.github.io/GIT_3D_Portfolio](https://pradeep-b28.github.io/GIT_3D_Portfolio/)
-- 💻 **GitHub Profile:** [@Pradeep-B28](https://github.com/Pradeep-B28)
-- 💼 **LinkedIn:** [linkedin.com/in/pradeepb-2k](https://www.linkedin.com/in/pradeepb-2k)
-- 📧 **Email:** [pradeepbashaa@gmail.com](mailto:pradeepbashaa@gmail.com)
+This project is licensed under the [MIT License](LICENSE).
