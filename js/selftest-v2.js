@@ -11,7 +11,7 @@ import {
   TIME_SPLIT_EXPECTED
 } from './selftest-data.js';
 
-export function runV2Tests(todayDayNum) {
+export function runV2Tests(todayDayNum = dayNumber(2026, 10, 23)) {
   let allPassed = true;
   const historyResults = [];
   const milestoneResults = [];

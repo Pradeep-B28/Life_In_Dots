@@ -197,8 +197,10 @@ export function dotIndexForDate(dob, dateInput) {
   } else if (typeof dateInput === 'string') {
     const [y, m, d] = dateInput.split('-').map(Number);
     targetDay = dayNumber(y, m, d);
-  } else {
+  } else if (dateInput && typeof dateInput === 'object' && dateInput.year) {
     targetDay = dayNumber(dateInput.year, dateInput.month, dateInput.day);
+  } else {
+    return 0;
   }
 
   if (targetDay < dobDay) return 0;
